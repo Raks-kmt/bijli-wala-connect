@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppDataProvider } from "./contexts/AppDataContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import LoginScreen from "./components/auth/LoginScreen";
 import CustomerDashboard from "./components/customer/CustomerDashboard";
 import ElectricianDashboard from "./components/electrician/ElectricianDashboard";
@@ -44,21 +45,23 @@ const AppRoutes = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <AppDataProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/*" element={<AppRoutes />} />
-              </Routes>
-            </BrowserRouter>
-          </AppDataProvider>
-        </AuthProvider>
-      </LanguageProvider>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <AppDataProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/*" element={<AppRoutes />} />
+                </Routes>
+              </BrowserRouter>
+            </AppDataProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

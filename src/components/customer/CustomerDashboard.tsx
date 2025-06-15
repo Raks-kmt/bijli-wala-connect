@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -339,20 +340,21 @@ const CustomerDashboard = () => {
 
   if (currentSection !== 'home') {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Header for non-home sections */}
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
           <div className="p-4 flex items-center justify-between">
             <Button variant="ghost" onClick={() => setCurrentSection('home')}>
               ← {language === 'hi' ? 'होम' : 'Home'}
             </Button>
-            <h1 className="text-lg font-semibold">
+            <h1 className="text-lg font-semibold dark:text-gray-100">
               {currentSection === 'bookings' && (language === 'hi' ? 'बुकिंग' : 'Bookings')}
               {currentSection === 'chat' && (language === 'hi' ? 'चैट' : 'Chat')}
               {currentSection === 'wallet' && (language === 'hi' ? 'वॉलेट' : 'Wallet')}
               {currentSection === 'profile' && (language === 'hi' ? 'प्रोफाइल' : 'Profile')}
             </h1>
             <div className="flex space-x-2">
+              <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={handleNotifications}>
                 <Bell className="h-5 w-5" />
                 {unreadNotifications.length > 0 && (
@@ -370,20 +372,21 @@ const CustomerDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                 {language === 'hi' ? 'नमस्ते!' : 'Hello!'}
               </h1>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {language === 'hi' ? 'आज आपको किस सेवा की जरूरत है?' : 'What service do you need today?'}
               </p>
             </div>
             <div className="flex space-x-2">
+              <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={handleNotifications}>
                 <Bell className="h-5 w-5" />
                 {unreadNotifications.length > 0 && (
@@ -471,7 +474,7 @@ const CustomerDashboard = () => {
       )}
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
         <div className="flex items-center justify-around py-2">
           {[
             { icon: Search, label: language === 'hi' ? 'खोजें' : 'Search', key: 'home' },
