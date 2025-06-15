@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ const ElectricianDashboard = () => {
   const { t, language } = useLanguage();
   const { user, logout, updateUser } = useAuth();
   const { jobs, updateJobStatus, electricians, notifications, markNotificationRead } = useAppData();
+  const { toast } = useToast();
   
   const [currentSection, setCurrentSection] = useState<'home' | 'jobs' | 'chat' | 'wallet' | 'services' | 'profile'>('home');
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -255,7 +257,7 @@ const ElectricianDashboard = () => {
       case 'jobs':
         return renderHomeSection(); // Jobs are shown on home
       case 'services':
-        return <ServicesManagement />;
+        return <ServicesManagement isOpen={true} onClose={() => setCurrentSection('home')} />;
       case 'chat':
         return (
           <div className="p-4 text-center text-gray-500">
