@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import BookingSection from './BookingSection';
 import ChatSection from './ChatSection';
 import WalletSection from './WalletSection';
 import ProfileSection from './ProfileSection';
+import BookingModal from './BookingModal';
 
 interface Electrician {
   id: string;
@@ -29,8 +29,9 @@ const CustomerDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'nearby' | 'top_rated' | 'available'>('all');
   const [currentSection, setCurrentSection] = useState<'home' | 'bookings' | 'chat' | 'wallet' | 'profile'>('home');
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedElectrician, setSelectedElectrician] = useState<Electrician | null>(null);
 
-  // Mock data
   const electricians: Electrician[] = [
     {
       id: '1',
@@ -69,25 +70,25 @@ const CustomerDashboard = () => {
       name: language === 'hi' ? 'आपातकालीन सेवा' : 'Emergency Service', 
       icon: Zap, 
       color: 'bg-red-500',
-      action: () => console.log('Emergency service clicked')
+      action: () => handleEmergencyService()
     },
     { 
       name: language === 'hi' ? 'घर की वायरिंग' : 'Home Wiring', 
       icon: Clock, 
       color: 'bg-blue-500',
-      action: () => console.log('Home wiring clicked')
+      action: () => handleQuickService('wiring')
     },
     { 
       name: language === 'hi' ? 'फैन रिपेयर' : 'Fan Repair', 
       icon: Star, 
       color: 'bg-green-500',
-      action: () => console.log('Fan repair clicked')
+      action: () => handleQuickService('fan_repair')
     },
     { 
       name: language === 'hi' ? 'स्विच रिपेयर' : 'Switch Repair', 
       icon: Zap, 
       color: 'bg-purple-500',
-      action: () => console.log('Switch repair clicked')
+      action: () => handleQuickService('switch_repair')
     }
   ];
 
@@ -102,14 +103,63 @@ const CustomerDashboard = () => {
     }
   ];
 
+  const handleEmergencyService = () => {
+    console.log('Emergency service requested');
+    // Find nearest available electrician
+    const nearestElectrician = electricians
+      .filter(e => e.isAvailable)
+      .sort((a, b) => a.distance - b.distance)[0];
+    
+    if (nearestElectrician) {
+      setSelectedElectrician(nearestElectrician);
+      setShowBookingModal(true);
+    }
+  };
+
+  const handleQuickService = (serviceType: string) => {
+    console.log('Quick service requested:', serviceType);
+    // Filter electricians by service type
+    const relevantElectricians = electricians.filter(e => 
+      e.services.some(service => 
+        service.toLowerCase().includes(serviceType.replace('_', ' '))
+      )
+    );
+    
+    if (relevantElectricians.length > 0) {
+      setSelectedElectrician(relevantElectricians[0]);
+      setShowBookingModal(true);
+    }
+  };
+
   const bookElectrician = (electricianId: string) => {
     console.log('Booking electrician:', electricianId);
-    // Here you would implement the booking logic
+    const electrician = electricians.find(e => e.id === electricianId);
+    if (electrician) {
+      setSelectedElectrician(electrician);
+      setShowBookingModal(true);
+    }
   };
 
   const chatWithElectrician = (electricianId: string) => {
     console.log('Starting chat with electrician:', electricianId);
     setCurrentSection('chat');
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    console.log('Searching for:', query);
+    // Here you would implement actual search logic
+  };
+
+  const handleFilter = (filter: string) => {
+    setSelectedFilter(filter as any);
+    console.log('Applying filter:', filter);
+    // Here you would implement actual filtering logic
+  };
+
+  const handleNotifications = () => {
+    console.log('Opening notifications');
+    // Here you would implement notifications view
   };
 
   const renderCurrentSection = () => {
@@ -266,7 +316,7 @@ const CustomerDashboard = () => {
               {currentSection === 'profile' && (language === 'hi' ? 'प्रोफाइल' : 'Profile')}
             </h1>
             <div className="flex space-x-2">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={handleNotifications}>
                 <Bell className="h-5 w-5" />
               </Button>
             </div>
@@ -292,7 +342,7 @@ const CustomerDashboard = () => {
               </p>
             </div>
             <div className="flex space-x-2">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={handleNotifications}>
                 <Bell className="h-5 w-5" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setCurrentSection('profile')}>
@@ -305,9 +355,9 @@ const CustomerDashboard = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder={t('search')}
+              placeholder={language === 'hi' ? 'इलेक्ट्रीशियन खोजें...' : 'Search electricians...'}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -324,7 +374,7 @@ const CustomerDashboard = () => {
                 key={filter.key}
                 variant={selectedFilter === filter.key ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedFilter(filter.key as any)}
+                onClick={() => handleFilter(filter.key)}
                 className="whitespace-nowrap"
               >
                 {filter.label}
@@ -335,6 +385,23 @@ const CustomerDashboard = () => {
       </div>
 
       {renderCurrentSection()}
+
+      {/* Booking Modal */}
+      {showBookingModal && selectedElectrician && (
+        <BookingModal
+          electrician={selectedElectrician}
+          onClose={() => {
+            setShowBookingModal(false);
+            setSelectedElectrician(null);
+          }}
+          onConfirm={(bookingData) => {
+            console.log('Booking confirmed:', bookingData);
+            setShowBookingModal(false);
+            setSelectedElectrician(null);
+            setCurrentSection('bookings');
+          }}
+        />
+      )}
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t">
