@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '@/hooks/use-toast';
 import { Search, MapPin, Star, Clock, Zap, MessageSquare, Bell, User, Wallet } from 'lucide-react';
 import BookingSection from './BookingSection';
 import ChatSection from './ChatSection';
@@ -26,6 +27,7 @@ interface Electrician {
 
 const CustomerDashboard = () => {
   const { t, language } = useLanguage();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'nearby' | 'top_rated' | 'available'>('all');
   const [currentSection, setCurrentSection] = useState<'home' | 'bookings' | 'chat' | 'wallet' | 'profile'>('home');
@@ -105,7 +107,6 @@ const CustomerDashboard = () => {
 
   const handleEmergencyService = () => {
     console.log('Emergency service requested');
-    // Find nearest available electrician
     const nearestElectrician = electricians
       .filter(e => e.isAvailable)
       .sort((a, b) => a.distance - b.distance)[0];
@@ -113,12 +114,21 @@ const CustomerDashboard = () => {
     if (nearestElectrician) {
       setSelectedElectrician(nearestElectrician);
       setShowBookingModal(true);
+      toast({
+        title: language === 'hi' ? 'आपातकालीन सेवा' : 'Emergency Service',
+        description: language === 'hi' ? 'निकटतम इलेक्ट्रीशियन मिल गया' : 'Nearest electrician found',
+      });
+    } else {
+      toast({
+        title: language === 'hi' ? 'क्षमा करें' : 'Sorry',
+        description: language === 'hi' ? 'कोई इलेक्ट्रीशियन उपलब्ध नहीं' : 'No electrician available',
+        variant: 'destructive'
+      });
     }
   };
 
   const handleQuickService = (serviceType: string) => {
     console.log('Quick service requested:', serviceType);
-    // Filter electricians by service type
     const relevantElectricians = electricians.filter(e => 
       e.services.some(service => 
         service.toLowerCase().includes(serviceType.replace('_', ' '))
@@ -128,6 +138,16 @@ const CustomerDashboard = () => {
     if (relevantElectricians.length > 0) {
       setSelectedElectrician(relevantElectricians[0]);
       setShowBookingModal(true);
+      toast({
+        title: language === 'hi' ? 'सेवा मिली' : 'Service Found',
+        description: language === 'hi' ? 'इलेक्ट्रीशियन मिल गया' : 'Electrician found for this service',
+      });
+    } else {
+      toast({
+        title: language === 'hi' ? 'क्षमा करें' : 'Sorry',
+        description: language === 'hi' ? 'इस सेवा के लिए कोई इलेक्ट्रीशियन नहीं मिला' : 'No electrician found for this service',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -143,23 +163,44 @@ const CustomerDashboard = () => {
   const chatWithElectrician = (electricianId: string) => {
     console.log('Starting chat with electrician:', electricianId);
     setCurrentSection('chat');
+    toast({
+      title: language === 'hi' ? 'चैट शुरू' : 'Chat Started',
+      description: language === 'hi' ? 'इलेक्ट्रीशियन के साथ चैट खुल गई' : 'Chat opened with electrician',
+    });
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     console.log('Searching for:', query);
-    // Here you would implement actual search logic
+    if (query.trim()) {
+      toast({
+        title: language === 'hi' ? 'खोज रहे हैं' : 'Searching',
+        description: language === 'hi' ? `"${query}" के लिए खोज रहे हैं` : `Searching for "${query}"`,
+      });
+    }
   };
 
   const handleFilter = (filter: string) => {
     setSelectedFilter(filter as any);
     console.log('Applying filter:', filter);
-    // Here you would implement actual filtering logic
+    const filterTexts = {
+      all: language === 'hi' ? 'सभी' : 'All',
+      nearby: language === 'hi' ? 'नजदीकी' : 'Nearby',
+      top_rated: language === 'hi' ? 'टॉप रेटेड' : 'Top Rated',
+      available: language === 'hi' ? 'उपलब्ध' : 'Available'
+    };
+    toast({
+      title: language === 'hi' ? 'फिल्टर लगाया गया' : 'Filter Applied',
+      description: filterTexts[filter as keyof typeof filterTexts],
+    });
   };
 
   const handleNotifications = () => {
     console.log('Opening notifications');
-    // Here you would implement notifications view
+    toast({
+      title: language === 'hi' ? 'नोटिफिकेशन' : 'Notifications',
+      description: language === 'hi' ? 'आपके पास 3 नए नोटिफिकेशन हैं' : 'You have 3 new notifications',
+    });
   };
 
   const renderCurrentSection = () => {
@@ -222,7 +263,7 @@ const CustomerDashboard = () => {
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-semibold text-gray-900 truncate">{electrician.name}</h3>
                       <Badge variant={electrician.isAvailable ? "default" : "secondary"}>
-                        {electrician.isAvailable ? t('available') : t('unavailable')}
+                        {electrician.isAvailable ? (language === 'hi' ? 'उपलब्ध' : 'Available') : (language === 'hi' ? 'अनुपलब्ध' : 'Unavailable')}
                       </Badge>
                     </div>
                     <div className="flex items-center space-x-3 text-sm text-gray-600 mb-2">
@@ -232,11 +273,11 @@ const CustomerDashboard = () => {
                       </div>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-1" />
-                        {electrician.experience} {t('years_experience')}
+                        {electrician.experience} {language === 'hi' ? 'साल' : 'yrs'}
                       </div>
                       <div className="flex items-center">
                         <MapPin className="h-4 w-4 mr-1" />
-                        {electrician.distance} {t('km_away')}
+                        {electrician.distance} km
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-1 mb-2">
@@ -248,16 +289,16 @@ const CustomerDashboard = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-sm">
-                        <span className="text-gray-600">{t('base_charge')}: </span>
+                        <span className="text-gray-600">{language === 'hi' ? 'बेस चार्ज' : 'Base charge'}: </span>
                         <span className="font-semibold">₹{electrician.basePrice}</span>
                       </p>
                       <div className="flex space-x-2">
                         <Button size="sm" variant="outline" onClick={() => chatWithElectrician(electrician.id)}>
                           <MessageSquare className="h-4 w-4 mr-1" />
-                          {t('chat')}
+                          {language === 'hi' ? 'चैट' : 'Chat'}
                         </Button>
                         <Button size="sm" onClick={() => bookElectrician(electrician.id)}>
-                          {t('book_now')}
+                          {language === 'hi' ? 'बुक करें' : 'Book Now'}
                         </Button>
                       </div>
                     </div>
@@ -284,7 +325,7 @@ const CustomerDashboard = () => {
                     variant={booking.status === 'completed' ? 'default' : 'secondary'}
                     className={booking.status === 'completed' ? 'bg-green-500' : ''}
                   >
-                    {t(booking.status)}
+                    {booking.status === 'completed' ? (language === 'hi' ? 'पूर्ण' : 'Completed') : booking.status}
                   </Badge>
                 </div>
                 <p className="text-sm text-gray-600 mb-1">{booking.service}</p>
@@ -399,6 +440,10 @@ const CustomerDashboard = () => {
             setShowBookingModal(false);
             setSelectedElectrician(null);
             setCurrentSection('bookings');
+            toast({
+              title: language === 'hi' ? 'बुकिंग सफल' : 'Booking Successful',
+              description: language === 'hi' ? 'आपकी बुकिंग कन्फर्म हो गई' : 'Your booking has been confirmed',
+            });
           }}
         />
       )}
