@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -34,6 +33,11 @@ export interface Service {
   basePrice: number;
   description: string;
   category: string;
+  wholeHousePricing?: {
+    enabled: boolean;
+    perSquareFoot?: number;
+    flatRate?: number;
+  };
 }
 
 export interface Job {

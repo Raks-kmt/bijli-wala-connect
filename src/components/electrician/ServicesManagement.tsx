@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Clock, CheckCircle, XCircle, Home } from 'lucide-react';
 
 const ServicesManagement = ({ isOpen, onClose }) => {
   const { language } = useLanguage();
@@ -25,7 +26,10 @@ const ServicesManagement = ({ isOpen, onClose }) => {
       basePrice: 150,
       description: language === 'hi' ? 'सीलिंग फैन की स्थापना' : 'Ceiling fan installation',
       status: 'approved',
-      createdAt: '2024-01-10'
+      createdAt: '2024-01-10',
+      wholeHousePricing: {
+        enabled: false
+      }
     },
     {
       id: '2',
@@ -34,16 +38,24 @@ const ServicesManagement = ({ isOpen, onClose }) => {
       basePrice: 200,
       description: language === 'hi' ? 'घरेलू वायरिंग की मरम्मत' : 'Home wiring repair',
       status: 'pending',
-      createdAt: '2024-01-12'
+      createdAt: '2024-01-12',
+      wholeHousePricing: {
+        enabled: false
+      }
     },
     {
       id: '3',
-      name: language === 'hi' ? 'स्विच रिप्लेसमेंट' : 'Switch Replacement',
-      category: language === 'hi' ? 'रिप्लेसमेंट' : 'Replacement',
-      basePrice: 80,
-      description: language === 'hi' ? 'इलेक्ट्रिक स्विच बदलना' : 'Electric switch replacement',
-      status: 'rejected',
-      createdAt: '2024-01-08'
+      name: language === 'hi' ? 'पूरे घर की वायरिंग' : 'Complete House Wiring',
+      category: language === 'hi' ? 'पूर्ण घर कार्य' : 'Whole House Work',
+      basePrice: 5000,
+      description: language === 'hi' ? 'पूरे घर की इलेक्ट्रिकल वायरिंग' : 'Complete house electrical wiring',
+      status: 'approved',
+      createdAt: '2024-01-08',
+      wholeHousePricing: {
+        enabled: true,
+        perSquareFoot: 80,
+        flatRate: 25000
+      }
     }
   ]);
 
@@ -51,7 +63,12 @@ const ServicesManagement = ({ isOpen, onClose }) => {
     name: '',
     category: '',
     basePrice: '',
-    description: ''
+    description: '',
+    wholeHousePricing: {
+      enabled: false,
+      perSquareFoot: '',
+      flatRate: ''
+    }
   });
 
   const categories = [
@@ -59,7 +76,8 @@ const ServicesManagement = ({ isOpen, onClose }) => {
     language === 'hi' ? 'रिपेयर' : 'Repair',
     language === 'hi' ? 'रिप्लेसमेंट' : 'Replacement',
     language === 'hi' ? 'मेंटेनेंस' : 'Maintenance',
-    language === 'hi' ? 'आपातकाल' : 'Emergency'
+    language === 'hi' ? 'आपातकाल' : 'Emergency',
+    language === 'hi' ? 'पूर्ण घर कार्य' : 'Whole House Work'
   ];
 
   const handleAddService = () => {
@@ -72,16 +90,40 @@ const ServicesManagement = ({ isOpen, onClose }) => {
       return;
     }
 
+    if (newService.wholeHousePricing.enabled && !newService.wholeHousePricing.perSquareFoot && !newService.wholeHousePricing.flatRate) {
+      toast({
+        title: language === 'hi' ? 'त्रुटि' : 'Error',
+        description: language === 'hi' ? 'कृपया पूरे घर की दर भरें' : 'Please fill whole house pricing',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     const service = {
       id: Date.now().toString(),
       ...newService,
       basePrice: parseInt(newService.basePrice),
       status: 'pending',
-      createdAt: new Date().toISOString().split('T')[0]
+      createdAt: new Date().toISOString().split('T')[0],
+      wholeHousePricing: {
+        enabled: newService.wholeHousePricing.enabled,
+        perSquareFoot: newService.wholeHousePricing.perSquareFoot ? parseInt(newService.wholeHousePricing.perSquareFoot) : undefined,
+        flatRate: newService.wholeHousePricing.flatRate ? parseInt(newService.wholeHousePricing.flatRate) : undefined
+      }
     };
 
     setServices([...services, service]);
-    setNewService({ name: '', category: '', basePrice: '', description: '' });
+    setNewService({ 
+      name: '', 
+      category: '', 
+      basePrice: '', 
+      description: '',
+      wholeHousePricing: {
+        enabled: false,
+        perSquareFoot: '',
+        flatRate: ''
+      }
+    });
     setShowAddService(false);
 
     toast({
@@ -96,7 +138,12 @@ const ServicesManagement = ({ isOpen, onClose }) => {
       name: service.name,
       category: service.category,
       basePrice: service.basePrice.toString(),
-      description: service.description
+      description: service.description,
+      wholeHousePricing: {
+        enabled: service.wholeHousePricing?.enabled || false,
+        perSquareFoot: service.wholeHousePricing?.perSquareFoot?.toString() || '',
+        flatRate: service.wholeHousePricing?.flatRate?.toString() || ''
+      }
     });
     setShowAddService(true);
   };
@@ -109,14 +156,29 @@ const ServicesManagement = ({ isOpen, onClose }) => {
               ...service,
               ...newService,
               basePrice: parseInt(newService.basePrice),
-              status: 'pending' // Reset to pending after edit
+              status: 'pending',
+              wholeHousePricing: {
+                enabled: newService.wholeHousePricing.enabled,
+                perSquareFoot: newService.wholeHousePricing.perSquareFoot ? parseInt(newService.wholeHousePricing.perSquareFoot) : undefined,
+                flatRate: newService.wholeHousePricing.flatRate ? parseInt(newService.wholeHousePricing.flatRate) : undefined
+              }
             }
           : service
       );
       
       setServices(updatedServices);
       setEditingService(null);
-      setNewService({ name: '', category: '', basePrice: '', description: '' });
+      setNewService({ 
+        name: '', 
+        category: '', 
+        basePrice: '', 
+        description: '',
+        wholeHousePricing: {
+          enabled: false,
+          perSquareFoot: '',
+          flatRate: ''
+        }
+      });
       setShowAddService(false);
 
       toast({
@@ -188,6 +250,12 @@ const ServicesManagement = ({ isOpen, onClose }) => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-semibold">{service.name}</h4>
+                        {service.wholeHousePricing?.enabled && (
+                          <Badge className="bg-purple-100 text-purple-800">
+                            <Home className="h-3 w-3 mr-1" />
+                            {language === 'hi' ? 'पूरा घर' : 'Whole House'}
+                          </Badge>
+                        )}
                         <Badge className={getStatusColor(service.status)}>
                           <div className="flex items-center gap-1">
                             {getStatusIcon(service.status)}
@@ -203,8 +271,18 @@ const ServicesManagement = ({ isOpen, onClose }) => {
                         {language === 'hi' ? 'श्रेणी:' : 'Category:'} {service.category}
                       </p>
                       <p className="text-sm text-gray-600 mb-1">
-                        {language === 'hi' ? 'मूल्य:' : 'Price:'} ₹{service.basePrice}
+                        {language === 'hi' ? 'बेस मूल्य:' : 'Base Price:'} ₹{service.basePrice}
                       </p>
+                      {service.wholeHousePricing?.enabled && (
+                        <div className="text-sm text-gray-600 mb-1">
+                          {service.wholeHousePricing.perSquareFoot && (
+                            <p>{language === 'hi' ? 'प्रति वर्ग फुट:' : 'Per Sq Ft:'} ₹{service.wholeHousePricing.perSquareFoot}</p>
+                          )}
+                          {service.wholeHousePricing.flatRate && (
+                            <p>{language === 'hi' ? 'फ्लैट रेट:' : 'Flat Rate:'} ₹{service.wholeHousePricing.flatRate}</p>
+                          )}
+                        </div>
+                      )}
                       <p className="text-sm text-gray-600 mb-2">{service.description}</p>
                       <p className="text-xs text-gray-400">
                         {language === 'hi' ? 'जोड़ा गया:' : 'Added:'} {service.createdAt}
@@ -237,7 +315,7 @@ const ServicesManagement = ({ isOpen, onClose }) => {
 
         {/* Add/Edit Service Modal */}
         <Dialog open={showAddService} onOpenChange={setShowAddService}>
-          <DialogContent>
+          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingService 
@@ -290,6 +368,76 @@ const ServicesManagement = ({ isOpen, onClose }) => {
                   placeholder="50"
                 />
               </div>
+              
+              {/* Whole House Pricing Section */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Label>
+                    {language === 'hi' ? 'पूरे घर की प्राइसिंग' : 'Whole House Pricing'}
+                  </Label>
+                  <Switch
+                    checked={newService.wholeHousePricing.enabled}
+                    onCheckedChange={(checked) => setNewService({
+                      ...newService,
+                      wholeHousePricing: {
+                        ...newService.wholeHousePricing,
+                        enabled: checked
+                      }
+                    })}
+                  />
+                </div>
+                
+                {newService.wholeHousePricing.enabled && (
+                  <div className="space-y-3 bg-gray-50 p-3 rounded-md">
+                    <div>
+                      <Label htmlFor="perSquareFoot">
+                        {language === 'hi' ? 'प्रति वर्ग फुट रेट (₹)' : 'Rate per Square Foot (₹)'}
+                      </Label>
+                      <Input
+                        id="perSquareFoot"
+                        type="number"
+                        value={newService.wholeHousePricing.perSquareFoot}
+                        onChange={(e) => setNewService({
+                          ...newService,
+                          wholeHousePricing: {
+                            ...newService.wholeHousePricing,
+                            perSquareFoot: e.target.value
+                          }
+                        })}
+                        placeholder="80"
+                      />
+                    </div>
+                    <div className="text-center text-sm text-gray-500">
+                      {language === 'hi' ? 'या' : 'OR'}
+                    </div>
+                    <div>
+                      <Label htmlFor="flatRate">
+                        {language === 'hi' ? 'फ्लैट रेट (₹)' : 'Flat Rate (₹)'}
+                      </Label>
+                      <Input
+                        id="flatRate"
+                        type="number"
+                        value={newService.wholeHousePricing.flatRate}
+                        onChange={(e) => setNewService({
+                          ...newService,
+                          wholeHousePricing: {
+                            ...newService.wholeHousePricing,
+                            flatRate: e.target.value
+                          }
+                        })}
+                        placeholder="25000"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {language === 'hi' ? 
+                        'आप दोनों या कोई एक रेट सेट कर सकते हैं' : 
+                        'You can set either or both rates'
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
+              
               <div>
                 <Label htmlFor="description">
                   {language === 'hi' ? 'विवरण' : 'Description'}
@@ -307,7 +455,17 @@ const ServicesManagement = ({ isOpen, onClose }) => {
                   onClick={() => {
                     setShowAddService(false);
                     setEditingService(null);
-                    setNewService({ name: '', category: '', basePrice: '', description: '' });
+                    setNewService({ 
+                      name: '', 
+                      category: '', 
+                      basePrice: '', 
+                      description: '',
+                      wholeHousePricing: {
+                        enabled: false,
+                        perSquareFoot: '',
+                        flatRate: ''
+                      }
+                    });
                   }}
                   className="flex-1"
                 >
