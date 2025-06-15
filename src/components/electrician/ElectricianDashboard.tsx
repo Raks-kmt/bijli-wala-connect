@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,11 +71,22 @@ const ElectricianDashboard = () => {
   };
 
   const handleLogout = () => {
-    logout();
-    toast({
-      title: language === 'hi' ? 'लॉगआउट सफल' : 'Logout Successful',
-      description: language === 'hi' ? 'आप सफलतापूर्वक लॉगआउट हो गए' : 'You have been logged out successfully',
-    });
+    console.log('Logout button clicked');
+    try {
+      logout();
+      console.log('Logout function called successfully');
+      toast({
+        title: language === 'hi' ? 'लॉगआउट सफल' : 'Logout Successful',
+        description: language === 'hi' ? 'आप सफलतापूर्वक लॉगआउट हो गए' : 'You have been logged out successfully',
+      });
+    } catch (error) {
+      console.error('Error during logout:', error);
+      toast({
+        title: language === 'hi' ? 'लॉगआउट में त्रुटि' : 'Logout Error',
+        description: language === 'hi' ? 'लॉगआउट में समस्या हुई' : 'There was an error during logout',
+        variant: 'destructive'
+      });
+    }
   };
 
   const toggleAvailability = () => {
@@ -281,6 +291,9 @@ const ElectricianDashboard = () => {
     }
   };
 
+  // Debug: Add console log to check current user state
+  console.log('Current user in ElectricianDashboard:', user);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -310,7 +323,7 @@ const ElectricianDashboard = () => {
               <Button variant="ghost" size="sm" onClick={handleSettings}>
                 <Settings className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="text-red-600 hover:text-red-700 hover:bg-red-50">
                 <LogOut className="h-5 w-5" />
               </Button>
             </div>

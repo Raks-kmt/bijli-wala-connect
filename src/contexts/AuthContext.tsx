@@ -20,19 +20,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Simulate checking for existing session
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('user');
+      }
     }
     setIsLoading(false);
   }, []);
 
   const login = (userData: User) => {
+    console.log('Login called with:', userData);
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {
+    console.log('Logout function called');
     setUser(null);
     localStorage.removeItem('user');
+    console.log('User state cleared and localStorage cleared');
   };
 
   const updateUser = (updates: Partial<User>) => {
@@ -42,6 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('user', JSON.stringify(updatedUser));
     }
   };
+
+  // Debug: Log current user state
+  console.log('AuthContext - Current user:', user);
 
   return (
     <AuthContext.Provider value={{ user, login, logout, updateUser, isLoading }}>
