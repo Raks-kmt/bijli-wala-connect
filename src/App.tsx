@@ -12,8 +12,7 @@ import LoginScreen from "./components/auth/LoginScreen";
 import CustomerDashboard from "./components/customer/CustomerDashboard";
 import ElectricianDashboard from "./components/electrician/ElectricianDashboard";
 import AdminDashboard from "./components/admin/AdminDashboard";
-
-const queryClient = new QueryClient();
+import React from 'react';
 
 const AppRoutes = () => {
   const { user, isLoading } = useAuth();
@@ -43,26 +42,38 @@ const AppRoutes = () => {
   }
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <LanguageProvider>
-          <AuthProvider>
-            <AppDataProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/*" element={<AppRoutes />} />
-                </Routes>
-              </BrowserRouter>
-            </AppDataProvider>
-          </AuthProvider>
-        </LanguageProvider>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Create QueryClient inside the component to ensure React is fully initialized
+  const [queryClient] = React.useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        refetchOnWindowFocus: false,
+      },
+    },
+  }));
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <TooltipProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <AppDataProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/*" element={<AppRoutes />} />
+                  </Routes>
+                </BrowserRouter>
+              </AppDataProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
