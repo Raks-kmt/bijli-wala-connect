@@ -41,7 +41,7 @@ const ElectricianDashboard = () => {
 
   const [activeJobs, setActiveJobs] = useState([
     {
-      id: '1',
+      id: '3',
       customer: language === 'hi' ? 'राज मल्होत्रा' : 'Raj Malhotra',
       phone: '+91 76543 21098',
       service: language === 'hi' ? 'स्विच रिपेयर' : 'Switch Repair',
@@ -55,6 +55,9 @@ const ElectricianDashboard = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [selectedJobForCompletion, setSelectedJobForCompletion] = useState(null);
+  const [showJobsModal, setShowJobsModal] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [showEarningsModal, setShowEarningsModal] = useState(false);
 
   // Mock data
   const stats = {
@@ -67,6 +70,12 @@ const ElectricianDashboard = () => {
   const notifications = [
     { id: '1', title: language === 'hi' ? 'नया जॉब रिक्वेस्ट' : 'New Job Request', message: language === 'hi' ? 'आपके पास नया जॉब रिक्वेस्ट है' : 'You have a new job request', time: '5 min ago' },
     { id: '2', title: language === 'hi' ? 'पेमेंट प्राप्त' : 'Payment Received', message: language === 'hi' ? '₹450 आपके वॉलेट में जोड़े गए' : '₹450 added to your wallet', time: '1 hour ago' }
+  ];
+
+  const earningsData = [
+    { date: '2024-01-15', amount: 450, job: 'Fan Repair', customer: 'Anil Gupta' },
+    { date: '2024-01-14', amount: 800, job: 'Emergency Wiring', customer: 'Priya Sharma' },
+    { date: '2024-01-13', amount: 300, job: 'Switch Installation', customer: 'Raj Kumar' },
   ];
 
   const handleAcceptJob = (jobId) => {
@@ -145,10 +154,33 @@ const ElectricianDashboard = () => {
 
   const handleBottomNavClick = (tab) => {
     setActiveTab(tab);
-    toast({
-      title: language === 'hi' ? 'नेवीगेशन' : 'Navigation',
-      description: language === 'hi' ? `${tab} पेज पर जा रहे हैं` : `Navigating to ${tab} page`,
-    });
+    
+    switch (tab) {
+      case 'dashboard':
+        toast({
+          title: language === 'hi' ? 'डैशबोर्ड' : 'Dashboard',
+          description: language === 'hi' ? 'डैशबोर्ड पेज पर जा रहे हैं' : 'Navigating to dashboard',
+        });
+        break;
+      case 'jobs':
+        setShowJobsModal(true);
+        break;
+      case 'chat':
+        setShowChatModal(true);
+        break;
+      case 'earnings':
+        setShowEarningsModal(true);
+        break;
+      case 'profile':
+        setShowProfile(true);
+        break;
+      default:
+        toast({
+          title: language === 'hi' ? 'नेवीगेशन' : 'Navigation',
+          description: language === 'hi' ? `${tab} पेज पर जा रहे हैं` : `Navigating to ${tab} page`,
+        });
+        break;
+    }
   };
 
   const handleAvailabilityToggle = (checked) => {
@@ -235,7 +267,7 @@ const ElectricianDashboard = () => {
               <p className="text-sm text-gray-600">{t('rating')}</p>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleBottomNavClick('jobs')}>
             <CardContent className="p-3 text-center">
               <div className="text-2xl font-bold text-orange-600">{stats.activeJobs}</div>
               <p className="text-sm text-gray-600">{t('active_jobs')}</p>
@@ -374,7 +406,7 @@ const ElectricianDashboard = () => {
             { icon: User, label: language === 'hi' ? 'प्रोफाइल' : 'Profile', key: 'profile' }
           ].map((item, index) => (
             <Button 
-              key={index} 
+              key={`bottom-nav-${item.key}`}
               variant="ghost" 
               size="sm" 
               className={`flex flex-col items-center py-3 ${activeTab === item.key ? 'text-blue-600' : 'text-gray-500'}`}
@@ -386,6 +418,105 @@ const ElectricianDashboard = () => {
           ))}
         </div>
       </div>
+
+      {/* Jobs Modal */}
+      <Dialog open={showJobsModal} onOpenChange={setShowJobsModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{language === 'hi' ? 'सभी जॉब्स' : 'All Jobs'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div>
+              <h3 className="font-medium mb-2">{language === 'hi' ? 'नए रिक्वेस्ट' : 'New Requests'}</h3>
+              {jobRequests.map((job) => (
+                <div key={`modal-job-${job.id}`} className="p-3 border rounded-lg mb-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium">{job.customer}</h4>
+                      <p className="text-sm text-gray-600">{job.service}</p>
+                      <p className="text-sm text-green-600">₹{job.amount}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button size="sm" onClick={() => handleAcceptJob(job.id)}>
+                        {language === 'hi' ? 'स्वीकार' : 'Accept'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div>
+              <h3 className="font-medium mb-2">{language === 'hi' ? 'एक्टिव जॉब्स' : 'Active Jobs'}</h3>
+              {activeJobs.map((job) => (
+                <div key={`modal-active-${job.id}`} className="p-3 border rounded-lg mb-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium">{job.customer}</h4>
+                      <p className="text-sm text-gray-600">{job.service}</p>
+                      <Badge className="bg-blue-500 text-xs">{job.status}</Badge>
+                    </div>
+                    <Button size="sm" onClick={() => handleCompleteJob(job)}>
+                      {language === 'hi' ? 'पूरा करें' : 'Complete'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Chat Modal */}
+      <Dialog open={showChatModal} onOpenChange={setShowChatModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{language === 'hi' ? 'चैट' : 'Chat'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center py-8">
+              <MessageSquare className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+              <p className="text-gray-600">
+                {language === 'hi' ? 'कोई चैट नहीं मिली' : 'No chats found'}
+              </p>
+              <p className="text-sm text-gray-500">
+                {language === 'hi' ? 'जॉब स्वीकार करने के बाद चैट शुरू करें' : 'Start chatting after accepting a job'}
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Earnings Modal */}
+      <Dialog open={showEarningsModal} onOpenChange={setShowEarningsModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{language === 'hi' ? 'कमाई' : 'Earnings'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <h3 className="text-2xl font-bold text-green-600">₹{stats.totalEarnings}</h3>
+              <p className="text-sm text-gray-600">{language === 'hi' ? 'कुल कमाई' : 'Total Earnings'}</p>
+            </div>
+            <div>
+              <h3 className="font-medium mb-2">{language === 'hi' ? 'हाल की कमाई' : 'Recent Earnings'}</h3>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {earningsData.map((earning, index) => (
+                  <div key={`earning-${index}`} className="p-3 border rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium">{earning.job}</h4>
+                        <p className="text-sm text-gray-600">{earning.customer}</p>
+                        <p className="text-xs text-gray-400">{earning.date}</p>
+                      </div>
+                      <p className="font-bold text-green-600">₹{earning.amount}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Notifications Dialog */}
       <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
@@ -420,13 +551,28 @@ const ElectricianDashboard = () => {
               <p className="text-sm text-gray-600">{language === 'hi' ? 'इलेक्ट्रिशियन' : 'Electrician'}</p>
             </div>
             <div className="space-y-2">
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={() => {
+                toast({
+                  title: language === 'hi' ? 'प्रोफाइल एडिट' : 'Edit Profile',
+                  description: language === 'hi' ? 'प्रोफाइल एडिट पेज खोला जा रहा है...' : 'Opening edit profile page...',
+                });
+              }}>
                 {language === 'hi' ? 'प्रोफाइल एडिट करें' : 'Edit Profile'}
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={() => {
+                toast({
+                  title: language === 'hi' ? 'सेटिंग्स' : 'Settings',
+                  description: language === 'hi' ? 'सेटिंग्स पेज खोला जा रहा है...' : 'Opening settings page...',
+                });
+              }}>
                 {language === 'hi' ? 'सेटिंग्स' : 'Settings'}
               </Button>
-              <Button variant="outline" className="w-full text-red-600">
+              <Button variant="outline" className="w-full text-red-600" onClick={() => {
+                toast({
+                  title: language === 'hi' ? 'लॉगआउट' : 'Logout',
+                  description: language === 'hi' ? 'लॉगआउट हो रहे हैं...' : 'Logging out...',
+                });
+              }}>
                 {language === 'hi' ? 'लॉगआउट' : 'Logout'}
               </Button>
             </div>
@@ -444,7 +590,12 @@ const ElectricianDashboard = () => {
             <p className="text-sm text-gray-600">
               {language === 'hi' ? 'कृपया जॉब की फोटो अपलोड करें और काम पूरा करें' : 'Please upload photos of the completed work'}
             </p>
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" onClick={() => {
+              toast({
+                title: language === 'hi' ? 'फोटो अपलोड' : 'Upload Photos',
+                description: language === 'hi' ? 'फोटो अपलोड करने की सुविधा जल्दी आएगी' : 'Photo upload feature coming soon',
+              });
+            }}>
               <Camera className="h-4 w-4 mr-2" />
               {language === 'hi' ? 'फोटो अपलोड करें' : 'Upload Photos'}
             </Button>
