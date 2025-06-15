@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { User, Edit, Settings, LogOut, HelpCircle, Star } from 'lucide-react';
 
 const ProfileSection = () => {
-  const { language, toggleLanguage } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const { user, logout, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -17,6 +16,10 @@ const ProfileSection = () => {
     email: user?.email || '',
     phone: user?.phone || ''
   });
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'hi' : 'en');
+  };
 
   const saveProfile = () => {
     updateUser(editData);
