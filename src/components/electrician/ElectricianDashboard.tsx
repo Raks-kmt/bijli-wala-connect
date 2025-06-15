@@ -1,17 +1,21 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Star, Clock, Zap, MessageSquare, Bell, User, Wallet, Camera, CheckCircle, XCircle, Phone, Navigation } from 'lucide-react';
+import { MapPin, Star, Clock, Zap, MessageSquare, Bell, User, Wallet, Camera, CheckCircle, XCircle, Phone, Navigation, Settings, LogOut, Edit } from 'lucide-react';
 
 const ElectricianDashboard = () => {
   const { t, language } = useLanguage();
   const { toast } = useToast();
+  const { logout, user, updateUser } = useAuth();
   const [isAvailable, setIsAvailable] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [jobRequests, setJobRequests] = useState([
@@ -58,8 +62,31 @@ const ElectricianDashboard = () => {
   const [showJobsModal, setShowJobsModal] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const [showEarningsModal, setShowEarningsModal] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  // Mock data
+  const [profileData, setProfileData] = useState({
+    name: user?.name || (language === 'hi' ? 'राम प्रसाद' : 'Ram Prasad'),
+    phone: user?.phone || '+91 98765 43210',
+    email: user?.email || 'ram.prasad@example.com',
+    experience: '5 years',
+    specialization: language === 'hi' ? 'घरेलू वायरिंग और रिपेयर' : 'Home Wiring and Repair',
+    bio: language === 'hi' ? 'अनुभवी इलेक्ट्रिशियन जो गुणवत्तापूर्ण सेवा प्रदान करता है।' : 'Experienced electrician providing quality service.',
+    baseRate: '400'
+  });
+
+  const [settings, setSettings] = useState({
+    notifications: true,
+    locationSharing: true,
+    autoAcceptJobs: false,
+    workingHours: {
+      start: '09:00',
+      end: '18:00'
+    },
+    serviceRadius: '10',
+    language: language
+  });
+
   const stats = {
     totalEarnings: 15420,
     completedJobs: 45,
@@ -134,6 +161,46 @@ const ElectricianDashboard = () => {
         description: language === 'hi' ? 'जॉब सफलतापूर्वक पूरा किया गया' : 'Job completed successfully',
       });
     }
+  };
+
+  const handleEditProfile = () => {
+    setShowEditProfileModal(true);
+    setShowProfile(false);
+  };
+
+  const handleSaveProfile = () => {
+    updateUser({
+      name: profileData.name,
+      phone: profileData.phone,
+      email: profileData.email
+    });
+
+    setShowEditProfileModal(false);
+    toast({
+      title: language === 'hi' ? 'प्रोफाइल अपडेट' : 'Profile Updated',
+      description: language === 'hi' ? 'आपकी प्रोफाइल सफलतापूर्वक अपडेट हो गई' : 'Your profile has been updated successfully',
+    });
+  };
+
+  const handleSettings = () => {
+    setShowSettingsModal(true);
+    setShowProfile(false);
+  };
+
+  const handleSaveSettings = () => {
+    setShowSettingsModal(false);
+    toast({
+      title: language === 'hi' ? 'सेटिंग्स सेव' : 'Settings Saved',
+      description: language === 'hi' ? 'आपकी सेटिंग्स सफलतापूर्वक सेव हो गईं' : 'Your settings have been saved successfully',
+    });
+  };
+
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: language === 'hi' ? 'लॉगआउट सफल' : 'Logout Successful',
+      description: language === 'hi' ? 'आप सफलतापूर्वक लॉगआउट हो गए हैं' : 'You have been logged out successfully',
+    });
   };
 
   const handleQuickAction = (action) => {
@@ -536,7 +603,7 @@ const ElectricianDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Profile Dialog */}
+      {/* Updated Profile Dialog with functional buttons */}
       <Dialog open={showProfile} onOpenChange={setShowProfile}>
         <DialogContent>
           <DialogHeader>
@@ -547,33 +614,160 @@ const ElectricianDashboard = () => {
               <div className="w-20 h-20 bg-blue-500 rounded-full mx-auto mb-3 flex items-center justify-center">
                 <User className="h-10 w-10 text-white" />
               </div>
-              <h3 className="font-semibold">{language === 'hi' ? 'राम प्रसाद' : 'Ram Prasad'}</h3>
+              <h3 className="font-semibold">{profileData.name}</h3>
               <p className="text-sm text-gray-600">{language === 'hi' ? 'इलेक्ट्रिशियन' : 'Electrician'}</p>
             </div>
             <div className="space-y-2">
-              <Button variant="outline" className="w-full" onClick={() => {
-                toast({
-                  title: language === 'hi' ? 'प्रोफाइल एडिट' : 'Edit Profile',
-                  description: language === 'hi' ? 'प्रोफाइल एडिट पेज खोला जा रहा है...' : 'Opening edit profile page...',
-                });
-              }}>
+              <Button variant="outline" className="w-full" onClick={handleEditProfile}>
+                <Edit className="h-4 w-4 mr-2" />
                 {language === 'hi' ? 'प्रोफाइल एडिट करें' : 'Edit Profile'}
               </Button>
-              <Button variant="outline" className="w-full" onClick={() => {
-                toast({
-                  title: language === 'hi' ? 'सेटिंग्स' : 'Settings',
-                  description: language === 'hi' ? 'सेटिंग्स पेज खोला जा रहा है...' : 'Opening settings page...',
-                });
-              }}>
+              <Button variant="outline" className="w-full" onClick={handleSettings}>
+                <Settings className="h-4 w-4 mr-2" />
                 {language === 'hi' ? 'सेटिंग्स' : 'Settings'}
               </Button>
-              <Button variant="outline" className="w-full text-red-600" onClick={() => {
-                toast({
-                  title: language === 'hi' ? 'लॉगआउट' : 'Logout',
-                  description: language === 'hi' ? 'लॉगआउट हो रहे हैं...' : 'Logging out...',
-                });
-              }}>
+              <Button variant="outline" className="w-full text-red-600" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
                 {language === 'hi' ? 'लॉगआउट' : 'Logout'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Profile Modal */}
+      <Dialog open={showEditProfileModal} onOpenChange={setShowEditProfileModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{language === 'hi' ? 'प्रोफाइल एडिट करें' : 'Edit Profile'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div className="space-y-2">
+              <Label htmlFor="name">{language === 'hi' ? 'नाम' : 'Name'}</Label>
+              <Input
+                id="name"
+                value={profileData.name}
+                onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">{language === 'hi' ? 'फोन नंबर' : 'Phone Number'}</Label>
+              <Input
+                id="phone"
+                value={profileData.phone}
+                onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">{language === 'hi' ? 'ईमेल' : 'Email'}</Label>
+              <Input
+                id="email"
+                type="email"
+                value={profileData.email}
+                onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="experience">{language === 'hi' ? 'अनुभव' : 'Experience'}</Label>
+              <Input
+                id="experience"
+                value={profileData.experience}
+                onChange={(e) => setProfileData({...profileData, experience: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="specialization">{language === 'hi' ? 'विशेषज्ञता' : 'Specialization'}</Label>
+              <Input
+                id="specialization"
+                value={profileData.specialization}
+                onChange={(e) => setProfileData({...profileData, specialization: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bio">{language === 'hi' ? 'बायो' : 'Bio'}</Label>
+              <Textarea
+                id="bio"
+                value={profileData.bio}
+                onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="baseRate">{language === 'hi' ? 'बेस रेट (₹/घंटा)' : 'Base Rate (₹/hour)'}</Label>
+              <Input
+                id="baseRate"
+                value={profileData.baseRate}
+                onChange={(e) => setProfileData({...profileData, baseRate: e.target.value})}
+              />
+            </div>
+            <div className="flex space-x-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowEditProfileModal(false)}>
+                {language === 'hi' ? 'रद्द करें' : 'Cancel'}
+              </Button>
+              <Button className="flex-1" onClick={handleSaveProfile}>
+                {language === 'hi' ? 'सेव करें' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Modal */}
+      <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{language === 'hi' ? 'सेटिंग्स' : 'Settings'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <Label>{language === 'hi' ? 'नोटिफिकेशन' : 'Notifications'}</Label>
+              <Switch
+                checked={settings.notifications}
+                onCheckedChange={(checked) => setSettings({...settings, notifications: checked})}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>{language === 'hi' ? 'लोकेशन शेयरिंग' : 'Location Sharing'}</Label>
+              <Switch
+                checked={settings.locationSharing}
+                onCheckedChange={(checked) => setSettings({...settings, locationSharing: checked})}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>{language === 'hi' ? 'ऑटो एक्सेप्ट जॉब्स' : 'Auto Accept Jobs'}</Label>
+              <Switch
+                checked={settings.autoAcceptJobs}
+                onCheckedChange={(checked) => setSettings({...settings, autoAcceptJobs: checked})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'hi' ? 'काम के घंटे' : 'Working Hours'}</Label>
+              <div className="flex space-x-2">
+                <Input
+                  type="time"
+                  value={settings.workingHours.start}
+                  onChange={(e) => setSettings({...settings, workingHours: {...settings.workingHours, start: e.target.value}})}
+                />
+                <Input
+                  type="time"
+                  value={settings.workingHours.end}
+                  onChange={(e) => setSettings({...settings, workingHours: {...settings.workingHours, end: e.target.value}})}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="serviceRadius">{language === 'hi' ? 'सेवा रेडियस (किमी)' : 'Service Radius (km)'}</Label>
+              <Input
+                id="serviceRadius"
+                value={settings.serviceRadius}
+                onChange={(e) => setSettings({...settings, serviceRadius: e.target.value})}
+              />
+            </div>
+            <div className="flex space-x-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowSettingsModal(false)}>
+                {language === 'hi' ? 'रद्द करें' : 'Cancel'}
+              </Button>
+              <Button className="flex-1" onClick={handleSaveSettings}>
+                {language === 'hi' ? 'सेव करें' : 'Save'}
               </Button>
             </div>
           </div>
