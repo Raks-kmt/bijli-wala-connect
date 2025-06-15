@@ -11,6 +11,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, Star, Clock, Zap, MessageSquare, Bell, User, Wallet, Camera, CheckCircle, XCircle, Phone, Navigation, Settings, LogOut, Edit } from 'lucide-react';
+import ServicesManagement from './ServicesManagement';
+import ChatSection from '../customer/ChatSection';
 
 const ElectricianDashboard = () => {
   const { t, language } = useLanguage();
@@ -18,6 +20,7 @@ const ElectricianDashboard = () => {
   const { logout, user, updateUser } = useAuth();
   const [isAvailable, setIsAvailable] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
+
   const [jobRequests, setJobRequests] = useState([
     {
       id: '1',
@@ -64,6 +67,7 @@ const ElectricianDashboard = () => {
   const [showEarningsModal, setShowEarningsModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showServicesModal, setShowServicesModal] = useState(false);
 
   const [profileData, setProfileData] = useState({
     name: user?.name || (language === 'hi' ? 'राम प्रसाद' : 'Ram Prasad'),
@@ -126,6 +130,7 @@ const ElectricianDashboard = () => {
   };
 
   const handleStartChat = (customer, phone) => {
+    setShowChatModal(true);
     toast({
       title: language === 'hi' ? 'चैट शुरू करें' : 'Start Chat',
       description: language === 'hi' ? `${customer} के साथ चैट शुरू की गई` : `Chat started with ${customer}`,
@@ -213,6 +218,9 @@ const ElectricianDashboard = () => {
           title: language === 'hi' ? 'पोर्टफोलियो' : 'Portfolio',
           description: language === 'hi' ? 'पोर्टफोलियो पेज खोला जा रहा है...' : 'Opening portfolio page...',
         });
+        break;
+      case 'services':
+        setShowServicesModal(true);
         break;
       default:
         break;
@@ -453,10 +461,10 @@ const ElectricianDashboard = () => {
               <p className="text-sm font-medium">{t('my_profile')}</p>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleQuickAction('portfolio')}>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleQuickAction('services')}>
             <CardContent className="p-4 text-center">
-              <Camera className="h-8 w-8 mx-auto mb-2 text-green-600" />
-              <p className="text-sm font-medium">{t('portfolio')}</p>
+              <Zap className="h-8 w-8 mx-auto mb-2 text-green-600" />
+              <p className="text-sm font-medium">{language === 'hi' ? 'मेरी सेवाएं' : 'My Services'}</p>
             </CardContent>
           </Card>
         </div>
@@ -535,21 +543,8 @@ const ElectricianDashboard = () => {
 
       {/* Chat Modal */}
       <Dialog open={showChatModal} onOpenChange={setShowChatModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{language === 'hi' ? 'चैट' : 'Chat'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center py-8">
-              <MessageSquare className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-              <p className="text-gray-600">
-                {language === 'hi' ? 'कोई चैट नहीं मिली' : 'No chats found'}
-              </p>
-              <p className="text-sm text-gray-500">
-                {language === 'hi' ? 'जॉब स्वीकार करने के बाद चैट शुरू करें' : 'Start chatting after accepting a job'}
-              </p>
-            </div>
-          </div>
+        <DialogContent className="max-w-md max-h-[80vh] p-0">
+          <ChatSection />
         </DialogContent>
       </Dialog>
 
@@ -603,7 +598,7 @@ const ElectricianDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Updated Profile Dialog with functional buttons */}
+      {/* Profile Dialog */}
       <Dialog open={showProfile} onOpenChange={setShowProfile}>
         <DialogContent>
           <DialogHeader>
@@ -804,6 +799,12 @@ const ElectricianDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Services Management Modal */}
+      <ServicesManagement 
+        isOpen={showServicesModal} 
+        onClose={() => setShowServicesModal(false)} 
+      />
     </div>
   );
 };
