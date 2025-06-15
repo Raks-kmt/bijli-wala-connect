@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -223,7 +224,7 @@ const AdminDashboard = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>{language === 'hi' ? 'जॉब स्टेटस' : 'Job Status'}</CardHeader>
+                  <CardTitle>{language === 'hi' ? 'जॉब स्टेटस' : 'Job Status'}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={200}>
