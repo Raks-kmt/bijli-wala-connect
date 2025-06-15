@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AppDataProvider } from "./contexts/AppDataContext";
 import LoginScreen from "./components/auth/LoginScreen";
 import CustomerDashboard from "./components/customer/CustomerDashboard";
 import ElectricianDashboard from "./components/electrician/ElectricianDashboard";
@@ -46,13 +47,15 @@ const App = () => (
     <TooltipProvider>
       <LanguageProvider>
         <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/*" element={<AppRoutes />} />
-            </Routes>
-          </BrowserRouter>
+          <AppDataProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/*" element={<AppRoutes />} />
+              </Routes>
+            </BrowserRouter>
+          </AppDataProvider>
         </AuthProvider>
       </LanguageProvider>
     </TooltipProvider>

@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useAppData } from '../../contexts/AppDataContext';
 import { useToast } from '@/hooks/use-toast';
 import { Search, MapPin, Star, Clock, Zap, MessageSquare, Bell, User, Wallet } from 'lucide-react';
 import BookingSection from './BookingSection';
@@ -12,60 +14,39 @@ import WalletSection from './WalletSection';
 import ProfileSection from './ProfileSection';
 import BookingModal from './BookingModal';
 
-interface Electrician {
-  id: string;
-  name: string;
-  image: string;
-  rating: number;
-  experience: number;
-  distance: number;
-  services: string[];
-  basePrice: number;
-  isAvailable: boolean;
-  completedJobs: number;
-}
-
 const CustomerDashboard = () => {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const { toast } = useToast();
+  const { electricians, services, jobs, createJob, notifications } = useAppData();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'nearby' | 'top_rated' | 'available'>('all');
   const [currentSection, setCurrentSection] = useState<'home' | 'bookings' | 'chat' | 'wallet' | 'profile'>('home');
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [selectedElectrician, setSelectedElectrician] = useState<Electrician | null>(null);
+  const [selectedElectrician, setSelectedElectrician] = useState<any>(null);
 
-  const electricians: Electrician[] = [
-    {
-      id: '1',
-      name: language === 'hi' ? 'राम कुमार' : 'Ram Kumar',
-      image: '/placeholder.svg',
-      rating: 4.8,
-      experience: 5,
-      distance: 2.3,
-      services: [
-        language === 'hi' ? 'वायरिंग' : 'Wiring',
-        language === 'hi' ? 'फैन रिपेयर' : 'Fan Repair'
-      ],
-      basePrice: 300,
-      isAvailable: true,
-      completedJobs: 120
-    },
-    {
-      id: '2',
-      name: language === 'hi' ? 'सुरेश शर्मा' : 'Suresh Sharma',
-      image: '/placeholder.svg',
-      rating: 4.6,
-      experience: 8,
-      distance: 4.1,
-      services: [
-        language === 'hi' ? 'स्विच रिपेयर' : 'Switch Repair',
-        language === 'hi' ? 'लाइट फिटिंग' : 'Light Fitting'
-      ],
-      basePrice: 400,
-      isAvailable: false,
-      completedJobs: 200
+  // Filter electricians based on search and filter criteria
+  const filteredElectricians = electricians.filter(electrician => {
+    if (searchQuery && !electrician.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
     }
-  ];
+    
+    switch (selectedFilter) {
+      case 'nearby':
+        return electrician.location && electrician.location.address; // Has location
+      case 'top_rated':
+        return electrician.rating >= 4.5;
+      case 'available':
+        return electrician.availability;
+      default:
+        return true;
+    }
+  });
+
+  // Get customer's jobs
+  const customerJobs = jobs.filter(job => job.customerId === user?.id);
+  const unreadNotifications = notifications.filter(n => n.userId === user?.id && !n.isRead);
 
   const quickServices = [
     { 
@@ -94,22 +75,11 @@ const CustomerDashboard = () => {
     }
   ];
 
-  const recentBookings = [
-    {
-      id: '1',
-      electrician: language === 'hi' ? 'राम कुमार' : 'Ram Kumar',
-      service: language === 'hi' ? 'फैन रिपेयर' : 'Fan Repair',
-      status: 'completed',
-      date: '2024-01-15',
-      amount: 450
-    }
-  ];
-
   const handleEmergencyService = () => {
     console.log('Emergency service requested');
-    const nearestElectrician = electricians
-      .filter(e => e.isAvailable)
-      .sort((a, b) => a.distance - b.distance)[0];
+    const nearestElectrician = filteredElectricians
+      .filter(e => e.availability)
+      .sort((a, b) => (a.location?.lat || 0) - (b.location?.lat || 0))[0];
     
     if (nearestElectrician) {
       setSelectedElectrician(nearestElectrician);
@@ -129,9 +99,9 @@ const CustomerDashboard = () => {
 
   const handleQuickService = (serviceType: string) => {
     console.log('Quick service requested:', serviceType);
-    const relevantElectricians = electricians.filter(e => 
-      e.services.some(service => 
-        service.toLowerCase().includes(serviceType.replace('_', ' '))
+    const relevantElectricians = filteredElectricians.filter(e => 
+      e.services && e.services.some(service => 
+        service.name.toLowerCase().includes(serviceType.replace('_', ' '))
       )
     );
     
@@ -199,7 +169,7 @@ const CustomerDashboard = () => {
     console.log('Opening notifications');
     toast({
       title: language === 'hi' ? 'नोटिफिकेशन' : 'Notifications',
-      description: language === 'hi' ? 'आपके पास 3 नए नोटिफिकेशन हैं' : 'You have 3 new notifications',
+      description: language === 'hi' ? `आपके पास ${unreadNotifications.length} नए नोटिफिकेशन हैं` : `You have ${unreadNotifications.length} new notifications`,
     });
   };
 
@@ -245,25 +215,25 @@ const CustomerDashboard = () => {
           {language === 'hi' ? 'उपलब्ध इलेक्ट्रीशियन' : 'Available Electricians'}
         </h2>
         <div className="space-y-3">
-          {electricians.map((electrician) => (
+          {filteredElectricians.slice(0, 5).map((electrician) => (
             <Card key={electrician.id} className="cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-start space-x-3">
                   <div className="relative">
                     <img 
-                      src={electrician.image} 
+                      src={electrician.profileImage || '/placeholder.svg'} 
                       alt={electrician.name}
                       className="w-16 h-16 rounded-full object-cover"
                     />
-                    {electrician.isAvailable && (
+                    {electrician.availability && (
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-semibold text-gray-900 truncate">{electrician.name}</h3>
-                      <Badge variant={electrician.isAvailable ? "default" : "secondary"}>
-                        {electrician.isAvailable ? (language === 'hi' ? 'उपलब्ध' : 'Available') : (language === 'hi' ? 'अनुपलब्ध' : 'Unavailable')}
+                      <Badge variant={electrician.availability ? "default" : "secondary"}>
+                        {electrician.availability ? (language === 'hi' ? 'उपलब्ध' : 'Available') : (language === 'hi' ? 'अनुपलब्ध' : 'Unavailable')}
                       </Badge>
                     </div>
                     <div className="flex items-center space-x-3 text-sm text-gray-600 mb-2">
@@ -277,20 +247,27 @@ const CustomerDashboard = () => {
                       </div>
                       <div className="flex items-center">
                         <MapPin className="h-4 w-4 mr-1" />
-                        {electrician.distance} km
+                        {electrician.location?.address || 'Location not set'}
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {electrician.services.map((service, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {service}
-                        </Badge>
-                      ))}
-                    </div>
+                    {electrician.services && electrician.services.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {electrician.services.slice(0, 2).map((service, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {service.name}
+                          </Badge>
+                        ))}
+                        {electrician.services.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{electrician.services.length - 2} more
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <p className="text-sm">
-                        <span className="text-gray-600">{language === 'hi' ? 'बेस चार्ज' : 'Base charge'}: </span>
-                        <span className="font-semibold">₹{electrician.basePrice}</span>
+                        <span className="text-gray-600">{language === 'hi' ? 'पूर्ण जॉब्स' : 'Completed jobs'}: </span>
+                        <span className="font-semibold">{electrician.totalJobs}</span>
                       </p>
                       <div className="flex space-x-2">
                         <Button size="sm" variant="outline" onClick={() => chatWithElectrician(electrician.id)}>
@@ -307,6 +284,13 @@ const CustomerDashboard = () => {
               </CardContent>
             </Card>
           ))}
+          {filteredElectricians.length === 0 && (
+            <Card>
+              <CardContent className="p-8 text-center text-gray-500">
+                {language === 'hi' ? 'कोई इलेक्ट्रीशियन नहीं मिला' : 'No electricians found'}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -316,26 +300,38 @@ const CustomerDashboard = () => {
           {language === 'hi' ? 'हालिया बुकिंग' : 'Recent Bookings'}
         </h2>
         <div className="space-y-3">
-          {recentBookings.map((booking) => (
+          {customerJobs.slice(0, 3).map((booking) => (
             <Card key={booking.id}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium">{booking.electrician}</h3>
+                  <h3 className="font-medium">
+                    {electricians.find(e => e.id === booking.electricianId)?.name || 'Unknown Electrician'}
+                  </h3>
                   <Badge 
                     variant={booking.status === 'completed' ? 'default' : 'secondary'}
                     className={booking.status === 'completed' ? 'bg-green-500' : ''}
                   >
-                    {booking.status === 'completed' ? (language === 'hi' ? 'पूर्ण' : 'Completed') : booking.status}
+                    {booking.status === 'completed' ? (language === 'hi' ? 'पूर्ण' : 'Completed') : 
+                     booking.status === 'in_progress' ? (language === 'hi' ? 'चालू' : 'In Progress') :
+                     booking.status === 'accepted' ? (language === 'hi' ? 'स्वीकृत' : 'Accepted') :
+                     (language === 'hi' ? 'प्रतीक्षा' : 'Pending')}
                   </Badge>
                 </div>
-                <p className="text-sm text-gray-600 mb-1">{booking.service}</p>
+                <p className="text-sm text-gray-600 mb-1">{booking.description}</p>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">{booking.date}</span>
-                  <span className="font-semibold">₹{booking.amount}</span>
+                  <span className="text-gray-500">{booking.scheduledDate}</span>
+                  <span className="font-semibold">₹{booking.totalPrice}</span>
                 </div>
               </CardContent>
             </Card>
           ))}
+          {customerJobs.length === 0 && (
+            <Card>
+              <CardContent className="p-8 text-center text-gray-500">
+                {language === 'hi' ? 'कोई बुकिंग नहीं मिली' : 'No bookings found'}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
@@ -359,6 +355,11 @@ const CustomerDashboard = () => {
             <div className="flex space-x-2">
               <Button variant="ghost" size="sm" onClick={handleNotifications}>
                 <Bell className="h-5 w-5" />
+                {unreadNotifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadNotifications.length}
+                  </span>
+                )}
               </Button>
             </div>
           </div>
@@ -385,6 +386,11 @@ const CustomerDashboard = () => {
             <div className="flex space-x-2">
               <Button variant="ghost" size="sm" onClick={handleNotifications}>
                 <Bell className="h-5 w-5" />
+                {unreadNotifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadNotifications.length}
+                  </span>
+                )}
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setCurrentSection('profile')}>
                 <User className="h-5 w-5" />
@@ -437,6 +443,22 @@ const CustomerDashboard = () => {
           }}
           onConfirm={(bookingData) => {
             console.log('Booking confirmed:', bookingData);
+            
+            // Create job through context
+            createJob({
+              customerId: user?.id || '',
+              electricianId: selectedElectrician.id,
+              serviceId: services[0]?.id || 'default-service',
+              status: 'pending',
+              description: bookingData.description || 'Service request',
+              address: bookingData.address || 'Customer address',
+              location: { lat: 28.6139, lng: 77.2090 },
+              distance: 2.5,
+              totalPrice: bookingData.totalPrice || 500,
+              scheduledDate: bookingData.scheduledDate || new Date().toISOString().split('T')[0],
+              isEmergency: bookingData.isEmergency || false
+            });
+
             setShowBookingModal(false);
             setSelectedElectrician(null);
             setCurrentSection('bookings');
