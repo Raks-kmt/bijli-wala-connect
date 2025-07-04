@@ -82,7 +82,7 @@ export const RealtimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         userId: recipientId,
         title: user?.language === 'hi' ? 'नया संदेश' : 'New Message',
         message: message.substring(0, 50) + '...',
-        type: 'message',
+        type: 'system',
         isRead: false
       });
     }, 1000);
