@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -13,7 +14,7 @@ export interface ElectricianProfile extends User {
   age: number;
   experience: number;
   education: string;
-  services: Service[];
+  services: string[]; // Array of service IDs, not Service objects
   portfolio: string[];
   rating: number;
   totalJobs: number;

@@ -54,7 +54,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       age: 35,
       experience: 5,
       education: 'ITI Electrical',
-      services: ['1'],
+      services: ['1'], // Array of service IDs
       portfolio: [],
       rating: 4.8,
       totalJobs: 120,
@@ -81,7 +81,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       age: 28,
       experience: 3,
       education: 'Diploma Electrical',
-      services: [],
+      services: [], // Empty array of service IDs
       portfolio: [],
       rating: 0,
       totalJobs: 0,
