@@ -1,193 +1,140 @@
 
 import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { User } from '../../types';
-import { Zap, Globe } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Zap } from 'lucide-react';
 
 const LoginScreen = () => {
-  const { language, setLanguage, t } = useLanguage();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
-  const [step, setStep] = useState<'phone' | 'otp' | 'role'>('phone');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [selectedRole, setSelectedRole] = useState<'customer' | 'electrician' | 'admin'>('customer');
+  const { language } = useLanguage();
+  const { toast } = useToast();
 
-  const handlePhoneSubmit = () => {
-    if (phone.length === 10) {
-      // Simulate OTP sending
-      setStep('otp');
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      await login(email, password);
+      toast({
+        title: language === 'hi' ? 'लॉगिन सफल' : 'Login Successful',
+        description: language === 'hi' ? 'आपका स्वागत है' : 'Welcome back',
+      });
+    } catch (error) {
+      toast({
+        title: language === 'hi' ? 'लॉगिन त्रुटि' : 'Login Error',
+        description: language === 'hi' ? 'गलत ईमेल या पासवर्ड' : 'Invalid email or password',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleOtpSubmit = () => {
-    if (otp === '1234') { // Demo OTP
-      setStep('role');
-    }
-  };
-
-  const handleRoleSubmit = () => {
-    const userData: User = {
-      id: Math.random().toString(),
-      name: selectedRole === 'admin' ? 'Admin User' : `${selectedRole} User`,
-      email: `${selectedRole}@demo.com`,
-      phone: phone,
-      role: selectedRole,
-      isVerified: true,
-      language: language
+  const handleDemoLogin = (role: 'admin' | 'customer' | 'electrician') => {
+    const demoCredentials = {
+      admin: { email: 'admin@example.com', password: 'admin123' },
+      customer: { email: 'customer@example.com', password: 'customer123' },
+      electrician: { email: 'electrician@example.com', password: 'electrician123' }
     };
-    login(userData);
+
+    setEmail(demoCredentials[role].email);
+    setPassword(demoCredentials[role].password);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Language Selector */}
-        <div className="flex justify-center">
-          <Card className="w-fit">
-            <CardContent className="p-3">
-              <div className="flex items-center space-x-2">
-                <Globe className="h-4 w-4" />
-                <Select value={language} onValueChange={(value: 'en' | 'hi') => setLanguage(value)}>
-                  <SelectTrigger className="w-24 border-none">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">EN</SelectItem>
-                    <SelectItem value="hi">हिं</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* App Logo and Title */}
         <div className="text-center space-y-2">
-          <div className="flex justify-center">
-            <div className="bg-blue-600 p-3 rounded-full">
-              <Zap className="h-8 w-8 text-white" />
-            </div>
+          <div className="flex items-center justify-center mb-4">
+            <Zap className="h-8 w-8 text-blue-600 mr-2" />
+            <h1 className="text-2xl font-bold text-gray-900">
+              {language === 'hi' ? 'इलेक्ट्रिकल सेवा' : 'Electrical Service'}
+            </h1>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {language === 'hi' ? 'इलेक्ट्रिक सर्विस' : 'Electric Service'}
-          </h1>
           <p className="text-gray-600">
-            {language === 'hi' ? 'आपकी इलेक्ट्रिकल समस्याओं का समाधान' : 'Your electrical solutions partner'}
+            {language === 'hi' ? 'अपने अकाउंट में लॉगिन करें' : 'Login to your account'}
           </p>
         </div>
 
-        {/* Login Form */}
         <Card>
           <CardHeader>
             <CardTitle className="text-center">
-              {step === 'phone' && t('phone_number')}
-              {step === 'otp' && t('enter_otp')}
-              {step === 'role' && t('select_role')}
+              {language === 'hi' ? 'लॉगिन' : 'Login'}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {step === 'phone' && (
-              <>
-                <div className="space-y-2">
-                  <Input
-                    type="tel"
-                    placeholder={language === 'hi' ? 'मोबाइल नंबर दर्ज करें' : 'Enter mobile number'}
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    maxLength={10}
-                  />
-                </div>
-                <Button 
-                  onClick={handlePhoneSubmit} 
-                  className="w-full"
-                  disabled={phone.length !== 10}
-                >
-                  {language === 'hi' ? 'OTP भेजें' : 'Send OTP'}
-                </Button>
-              </>
-            )}
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="email">
+                  {language === 'hi' ? 'ईमेल' : 'Email'}
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={language === 'hi' ? 'आपका ईमेल' : 'Your email'}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">
+                  {language === 'hi' ? 'पासवर्ड' : 'Password'}
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={language === 'hi' ? 'आपका पासवर्ड' : 'Your password'}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {language === 'hi' ? 'लॉगिन करें' : 'Login'}
+              </Button>
+            </form>
 
-            {step === 'otp' && (
-              <>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600 text-center">
-                    {language === 'hi' ? `${phone} पर OTP भेजा गया` : `OTP sent to ${phone}`}
-                  </p>
-                  <Input
-                    type="text"
-                    placeholder={language === 'hi' ? 'OTP दर्ज करें' : 'Enter OTP'}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    maxLength={4}
-                    className="text-center text-xl tracking-widest"
-                  />
-                  <p className="text-xs text-gray-500 text-center">
-                    {language === 'hi' ? 'डेमो के लिए: 1234' : 'Demo OTP: 1234'}
-                  </p>
-                </div>
+            <div className="mt-6 space-y-2">
+              <p className="text-sm text-gray-600 text-center">
+                {language === 'hi' ? 'डेमो अकाउंट्स:' : 'Demo Accounts:'}
+              </p>
+              <div className="grid grid-cols-1 gap-2">
                 <Button 
-                  onClick={handleOtpSubmit} 
-                  className="w-full"
-                  disabled={otp.length !== 4}
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleDemoLogin('admin')}
+                  className="text-xs"
                 >
-                  {t('verify_otp')}
+                  {language === 'hi' ? 'एडमिन डेमो' : 'Admin Demo'}
                 </Button>
-              </>
-            )}
-
-            {step === 'role' && (
-              <>
-                <RadioGroup 
-                  value={selectedRole} 
-                  onValueChange={(value: 'customer' | 'electrician' | 'admin') => setSelectedRole(value)}
-                  className="space-y-3"
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleDemoLogin('customer')}
+                  className="text-xs"
                 >
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                    <RadioGroupItem value="customer" id="customer" />
-                    <Label htmlFor="customer" className="flex-1 cursor-pointer">
-                      <div>
-                        <p className="font-medium">{t('customer')}</p>
-                        <p className="text-sm text-gray-500">
-                          {language === 'hi' ? 'सेवा बुक करें' : 'Book services'}
-                        </p>
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                    <RadioGroupItem value="electrician" id="electrician" />
-                    <Label htmlFor="electrician" className="flex-1 cursor-pointer">
-                      <div>
-                        <p className="font-medium">{t('electrician')}</p>
-                        <p className="text-sm text-gray-500">
-                          {language === 'hi' ? 'सेवा प्रदान करें' : 'Provide services'}
-                        </p>
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                    <RadioGroupItem value="admin" id="admin" />
-                    <Label htmlFor="admin" className="flex-1 cursor-pointer">
-                      <div>
-                        <p className="font-medium">{t('admin')}</p>
-                        <p className="text-sm text-gray-500">
-                          {language === 'hi' ? 'प्रशासनिक पैनल' : 'Administrative panel'}
-                        </p>
-                      </div>
-                    </Label>
-                  </div>
-                </RadioGroup>
-                <Button onClick={handleRoleSubmit} className="w-full">
-                  {t('login')}
+                  {language === 'hi' ? 'कस्टमर डेमो' : 'Customer Demo'}
                 </Button>
-              </>
-            )}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleDemoLogin('electrician')}
+                  className="text-xs"
+                >
+                  {language === 'hi' ? 'इलेक्ट्रीशियन डेमो' : 'Electrician Demo'}
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
