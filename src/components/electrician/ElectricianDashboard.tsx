@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useRealtime } from '../../contexts/RealtimeContext';
+import { useRealtimeJobs } from '../../hooks/useRealtimeJobs';
 import { useToast } from '@/hooks/use-toast';
 import { Star, MapPin, Clock, Zap, MessageSquare, Bell, User, Wallet, Settings, Phone, Edit, LogOut, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -12,22 +14,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import RealtimeIndicator from '../common/RealtimeIndicator';
+import LiveChatWidget from '../common/LiveChatWidget';
 import ServicesManagement from './ServicesManagement';
 
 const ElectricianDashboard = () => {
   const { t, language } = useLanguage();
   const { user, logout, updateUser } = useAuth();
   const { jobs, updateJobStatus, electricians, notifications, markNotificationRead } = useAppData();
+  const { isConnected, updateJobStatus: realtimeUpdateJob } = useRealtime();
+  const { liveJobs, updateJobWithNotification } = useRealtimeJobs();
   const { toast } = useToast();
   
   const [currentSection, setCurrentSection] = useState<'home' | 'jobs' | 'chat' | 'wallet' | 'services' | 'profile'>('home');
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatRecipient, setChatRecipient] = useState<{ id: string; name: string } | null>(null);
 
   // Get current electrician data
   const currentElectrician = electricians.find(e => e.id === user?.id);
-  const electricianJobs = jobs.filter(job => job.electricianId === user?.id);
+  const electricianJobs = liveJobs.filter(job => job.electricianId === user?.id);
   const unreadNotifications = notifications.filter(n => n.userId === user?.id && !n.isRead);
 
   const stats = {
@@ -39,7 +47,7 @@ const ElectricianDashboard = () => {
   };
 
   const handleAcceptJob = (jobId: string) => {
-    updateJobStatus(jobId, 'accepted');
+    updateJobWithNotification(jobId, 'accepted');
     toast({
       title: language === 'hi' ? 'जॉब स्वीकार की गई' : 'Job Accepted',
       description: language === 'hi' ? 'आपने जॉब स्वीकार कर ली है' : 'You have accepted the job',
@@ -47,7 +55,7 @@ const ElectricianDashboard = () => {
   };
 
   const handleStartJob = (jobId: string) => {
-    updateJobStatus(jobId, 'in_progress');
+    updateJobWithNotification(jobId, 'in_progress');
     toast({
       title: language === 'hi' ? 'जॉब शुरू की गई' : 'Job Started',
       description: language === 'hi' ? 'जॉब की शुरुआत हो गई है' : 'Job has been started',
@@ -55,11 +63,16 @@ const ElectricianDashboard = () => {
   };
 
   const handleCompleteJob = (jobId: string) => {
-    updateJobStatus(jobId, 'completed');
+    updateJobWithNotification(jobId, 'completed');
     toast({
       title: language === 'hi' ? 'जॉब पूरी की गई' : 'Job Completed',
       description: language === 'hi' ? 'जॉब सफलतापूर्वक पूरी कर दी गई' : 'Job completed successfully',
     });
+  };
+
+  const handleChatWithCustomer = (customerId: string, customerName: string) => {
+    setChatRecipient({ id: customerId, name: customerName });
+    setChatOpen(true);
   };
 
   const handleEditProfile = () => {
@@ -101,6 +114,14 @@ const ElectricianDashboard = () => {
 
   const renderHomeSection = () => (
     <div className="p-4 space-y-6">
+      {/* Connection Status */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">
+          {language === 'hi' ? 'डैशबोर्ड' : 'Dashboard'}
+        </h2>
+        <RealtimeIndicator />
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4">
         <Card>
@@ -152,12 +173,17 @@ const ElectricianDashboard = () => {
 
       {/* New Job Requests */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">
+        <h2 className="text-lg font-semibold mb-3 flex items-center">
           {language === 'hi' ? 'नई जॉब रिक्वेस्ट' : 'New Job Requests'}
+          {isConnected && (
+            <Badge variant="default" className="ml-2 text-xs">
+              {language === 'hi' ? 'लाइव' : 'Live'}
+            </Badge>
+          )}
         </h2>
         <div className="space-y-3">
           {electricianJobs.filter(job => job.status === 'pending').map((job) => (
-            <Card key={job.id}>
+            <Card key={job.id} className="border-l-4 border-l-blue-500">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -181,7 +207,7 @@ const ElectricianDashboard = () => {
                   )}
                 </div>
                 <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" onClick={() => updateJobStatus(job.id, 'cancelled')}>
+                  <Button size="sm" variant="outline" onClick={() => updateJobWithNotification(job.id, 'cancelled')}>
                     {language === 'hi' ? 'अस्वीकार' : 'Decline'}
                   </Button>
                   <Button size="sm" onClick={() => handleAcceptJob(job.id)}>
@@ -208,7 +234,7 @@ const ElectricianDashboard = () => {
         </h2>
         <div className="space-y-3">
           {electricianJobs.filter(job => job.status === 'accepted' || job.status === 'in_progress').map((job) => (
-            <Card key={job.id}>
+            <Card key={job.id} className="border-l-4 border-l-green-500">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -233,7 +259,7 @@ const ElectricianDashboard = () => {
                   </Badge>
                 </div>
                 <div className="flex space-x-2">
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" onClick={() => handleChatWithCustomer(job.customerId, 'Customer')}>
                     <MessageSquare className="h-4 w-4 mr-1" />
                     {language === 'hi' ? 'चैट' : 'Chat'}
                   </Button>
@@ -271,7 +297,7 @@ const ElectricianDashboard = () => {
       case 'chat':
         return (
           <div className="p-4 text-center text-gray-500">
-            {language === 'hi' ? 'चैट फीचर जल्द आएगा' : 'Chat feature coming soon'}
+            {language === 'hi' ? 'चैट फीचर उपलब्ध है - जॉब्स में चैट बटन दबाएं' : 'Chat feature available - click chat button in jobs'}
           </div>
         );
       case 'wallet':
@@ -332,6 +358,19 @@ const ElectricianDashboard = () => {
       </div>
 
       {renderCurrentSection()}
+
+      {/* Live Chat Widget */}
+      {chatRecipient && (
+        <LiveChatWidget
+          recipientId={chatRecipient.id}
+          recipientName={chatRecipient.name}
+          isOpen={chatOpen}
+          onClose={() => {
+            setChatOpen(false);
+            setChatRecipient(null);
+          }}
+        />
+      )}
 
       {/* Edit Profile Modal */}
       <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>

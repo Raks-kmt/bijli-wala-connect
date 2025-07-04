@@ -7,8 +7,12 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useRealtime } from '../../contexts/RealtimeContext';
+import { useRealtimeJobs } from '../../hooks/useRealtimeJobs';
 import { useToast } from '@/hooks/use-toast';
 import { Search, MapPin, Star, Clock, Zap, MessageSquare, Bell, User, Wallet } from 'lucide-react';
+import RealtimeIndicator from '../common/RealtimeIndicator';
+import LiveChatWidget from '../common/LiveChatWidget';
 import BookingSection from './BookingSection';
 import ChatSection from './ChatSection';
 import WalletSection from './WalletSection';
@@ -20,12 +24,16 @@ const CustomerDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { electricians, services, jobs, createJob, notifications } = useAppData();
+  const { isConnected } = useRealtime();
+  const { liveJobs } = useRealtimeJobs();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'nearby' | 'top_rated' | 'available'>('all');
   const [currentSection, setCurrentSection] = useState<'home' | 'bookings' | 'chat' | 'wallet' | 'profile'>('home');
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedElectrician, setSelectedElectrician] = useState<any>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatRecipient, setChatRecipient] = useState<{ id: string; name: string } | null>(null);
 
   // Filter electricians based on search and filter criteria
   const filteredElectricians = electricians.filter(electrician => {
@@ -35,7 +43,7 @@ const CustomerDashboard = () => {
     
     switch (selectedFilter) {
       case 'nearby':
-        return electrician.location && electrician.location.address; // Has location
+        return electrician.location && electrician.location.address;
       case 'top_rated':
         return electrician.rating >= 4.5;
       case 'available':
@@ -45,8 +53,8 @@ const CustomerDashboard = () => {
     }
   });
 
-  // Get customer's jobs
-  const customerJobs = jobs.filter(job => job.customerId === user?.id);
+  // Get customer's jobs using real-time data
+  const customerJobs = liveJobs.filter(job => job.customerId === user?.id);
   const unreadNotifications = notifications.filter(n => n.userId === user?.id && !n.isRead);
 
   const quickServices = [
@@ -131,9 +139,10 @@ const CustomerDashboard = () => {
     }
   };
 
-  const chatWithElectrician = (electricianId: string) => {
+  const chatWithElectrician = (electricianId: string, electricianName: string) => {
     console.log('Starting chat with electrician:', electricianId);
-    setCurrentSection('chat');
+    setChatRecipient({ id: electricianId, name: electricianName });
+    setChatOpen(true);
     toast({
       title: language === 'hi' ? 'चैट शुरू' : 'Chat Started',
       description: language === 'hi' ? 'इलेक्ट्रीशियन के साथ चैट खुल गई' : 'Chat opened with electrician',
@@ -191,6 +200,14 @@ const CustomerDashboard = () => {
 
   const renderHomeSection = () => (
     <div className="p-4 space-y-6">
+      {/* Connection Status */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">
+          {language === 'hi' ? 'सेवाएं' : 'Services'}
+        </h2>
+        <RealtimeIndicator />
+      </div>
+
       {/* Quick Services */}
       <div>
         <h2 className="text-lg font-semibold mb-3">
@@ -212,12 +229,17 @@ const CustomerDashboard = () => {
 
       {/* Available Electricians */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">
+        <h2 className="text-lg font-semibold mb-3 flex items-center">
           {language === 'hi' ? 'उपलब्ध इलेक्ट्रीशियन' : 'Available Electricians'}
+          {isConnected && (
+            <Badge variant="default" className="ml-2 text-xs">
+              {language === 'hi' ? 'लाइव अपडेट' : 'Live Updates'}
+            </Badge>
+          )}
         </h2>
         <div className="space-y-3">
           {filteredElectricians.slice(0, 5).map((electrician) => (
-            <Card key={electrician.id} className="cursor-pointer hover:shadow-md transition-shadow">
+            <Card key={electrician.id} className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
               <CardContent className="p-4">
                 <div className="flex items-start space-x-3">
                   <div className="relative">
@@ -227,7 +249,7 @@ const CustomerDashboard = () => {
                       className="w-16 h-16 rounded-full object-cover"
                     />
                     {electrician.availability && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -271,7 +293,7 @@ const CustomerDashboard = () => {
                         <span className="font-semibold">{electrician.totalJobs}</span>
                       </p>
                       <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => chatWithElectrician(electrician.id)}>
+                        <Button size="sm" variant="outline" onClick={() => chatWithElectrician(electrician.id, electrician.name)}>
                           <MessageSquare className="h-4 w-4 mr-1" />
                           {language === 'hi' ? 'चैट' : 'Chat'}
                         </Button>
@@ -295,34 +317,52 @@ const CustomerDashboard = () => {
         </div>
       </div>
 
-      {/* Recent Bookings */}
+      {/* Recent Bookings with Live Status */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">
+        <h2 className="text-lg font-semibold mb-3 flex items-center">
           {language === 'hi' ? 'हालिया बुकिंग' : 'Recent Bookings'}
+          {isConnected && (
+            <Badge variant="default" className="ml-2 text-xs">
+              {language === 'hi' ? 'लाइव स्टेटस' : 'Live Status'}
+            </Badge>
+          )}
         </h2>
         <div className="space-y-3">
           {customerJobs.slice(0, 3).map((booking) => (
-            <Card key={booking.id}>
+            <Card key={booking.id} className="border-l-4 border-l-green-500">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-medium">
                     {electricians.find(e => e.id === booking.electricianId)?.name || 'Unknown Electrician'}
                   </h3>
-                  <Badge 
-                    variant={booking.status === 'completed' ? 'default' : 'secondary'}
-                    className={booking.status === 'completed' ? 'bg-green-500' : ''}
-                  >
-                    {booking.status === 'completed' ? (language === 'hi' ? 'पूर्ण' : 'Completed') : 
-                     booking.status === 'in_progress' ? (language === 'hi' ? 'चालू' : 'In Progress') :
-                     booking.status === 'accepted' ? (language === 'hi' ? 'स्वीकृत' : 'Accepted') :
-                     (language === 'hi' ? 'प्रतीक्षा' : 'Pending')}
-                  </Badge>
+                  <div className="flex items-center space-x-2">
+                    {booking.status === 'in_progress' && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    )}
+                    <Badge 
+                      variant={booking.status === 'completed' ? 'default' : 'secondary'}
+                      className={booking.status === 'completed' ? 'bg-green-500' : booking.status === 'in_progress' ? 'bg-blue-500' : ''}
+                    >
+                      {booking.status === 'completed' ? (language === 'hi' ? 'पूर्ण' : 'Completed') : 
+                       booking.status === 'in_progress' ? (language === 'hi' ? 'चालू' : 'In Progress') :
+                       booking.status === 'accepted' ? (language === 'hi' ? 'स्वीकृत' : 'Accepted') :
+                       (language === 'hi' ? 'प्रतीक्षा' : 'Pending')}
+                    </Badge>
+                  </div>
                 </div>
                 <p className="text-sm text-gray-600 mb-1">{booking.description}</p>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">{booking.scheduledDate}</span>
                   <span className="font-semibold">₹{booking.totalPrice}</span>
                 </div>
+                {booking.status === 'in_progress' && (
+                  <div className="mt-2">
+                    <Button size="sm" variant="outline" onClick={() => chatWithElectrician(booking.electricianId, electricians.find(e => e.id === booking.electricianId)?.name || 'Electrician')}>
+                      <MessageSquare className="h-4 w-4 mr-1" />
+                      {language === 'hi' ? 'चैट करें' : 'Chat Now'}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -354,6 +394,7 @@ const CustomerDashboard = () => {
               {currentSection === 'profile' && (language === 'hi' ? 'प्रोफाइल' : 'Profile')}
             </h1>
             <div className="flex space-x-2">
+              <RealtimeIndicator />
               <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={handleNotifications}>
                 <Bell className="h-5 w-5" />
@@ -367,6 +408,19 @@ const CustomerDashboard = () => {
           </div>
         </div>
         {renderCurrentSection()}
+        
+        {/* Live Chat Widget */}
+        {chatRecipient && (
+          <LiveChatWidget
+            recipientId={chatRecipient.id}
+            recipientName={chatRecipient.name}
+            isOpen={chatOpen}
+            onClose={() => {
+              setChatOpen(false);
+              setChatRecipient(null);
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -386,6 +440,7 @@ const CustomerDashboard = () => {
               </p>
             </div>
             <div className="flex space-x-2">
+              <RealtimeIndicator />
               <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={handleNotifications}>
                 <Bell className="h-5 w-5" />
@@ -435,6 +490,19 @@ const CustomerDashboard = () => {
       </div>
 
       {renderCurrentSection()}
+
+      {/* Live Chat Widget */}
+      {chatRecipient && (
+        <LiveChatWidget
+          recipientId={chatRecipient.id}
+          recipientName={chatRecipient.name}
+          isOpen={chatOpen}
+          onClose={() => {
+            setChatOpen(false);
+            setChatRecipient(null);
+          }}
+        />
+      )}
 
       {/* Booking Modal */}
       {showBookingModal && selectedElectrician && (

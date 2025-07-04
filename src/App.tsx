@@ -8,6 +8,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppDataProvider } from "./contexts/AppDataContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { RealtimeProvider } from "./contexts/RealtimeContext";
 import LoginScreen from "./components/auth/LoginScreen";
 import CustomerDashboard from "./components/customer/CustomerDashboard";
 import ElectricianDashboard from "./components/electrician/ElectricianDashboard";
@@ -59,15 +60,17 @@ const App = () => {
         <TooltipProvider>
           <LanguageProvider>
             <AuthProvider>
-              <AppDataProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/*" element={<AppRoutes />} />
-                  </Routes>
-                </BrowserRouter>
-              </AppDataProvider>
+              <RealtimeProvider>
+                <AppDataProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <Routes>
+                      <Route path="/*" element={<AppRoutes />} />
+                    </Routes>
+                  </BrowserRouter>
+                </AppDataProvider>
+              </RealtimeProvider>
             </AuthProvider>
           </LanguageProvider>
         </TooltipProvider>
