@@ -60,8 +60,8 @@ const App = () => {
         <TooltipProvider>
           <LanguageProvider>
             <AuthProvider>
-              <RealtimeProvider>
-                <AppDataProvider>
+              <AppDataProvider>
+                <RealtimeProvider>
                   <Toaster />
                   <Sonner />
                   <BrowserRouter>
@@ -69,8 +69,8 @@ const App = () => {
                       <Route path="/*" element={<AppRoutes />} />
                     </Routes>
                   </BrowserRouter>
-                </AppDataProvider>
-              </RealtimeProvider>
+                </RealtimeProvider>
+              </AppDataProvider>
             </AuthProvider>
           </LanguageProvider>
         </TooltipProvider>
