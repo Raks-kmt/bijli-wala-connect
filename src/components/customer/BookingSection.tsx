@@ -1,68 +1,33 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Clock, MapPin, Star, Phone, MessageSquare, Navigation } from 'lucide-react';
+import { useRealtime } from '../../contexts/RealtimeContext';
+import { useAppData } from '../../contexts/AppDataContext';
+import { Clock, MapPin, Star, Phone, MessageSquare, Navigation, CheckCircle } from 'lucide-react';
 
 const BookingSection = () => {
   const { language } = useLanguage();
+  const { isConnected, sendMessage } = useRealtime();
+  const { jobs, updateJobStatus } = useAppData();
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
 
-  const activeBookings = [
-    {
-      id: '1',
-      electrician: language === 'hi' ? 'राम कुमार' : 'Ram Kumar',
-      service: language === 'hi' ? 'फैन रिपेयर' : 'Fan Repair',
-      status: 'in_progress',
-      date: '2024-01-15',
-      time: '2:00 PM',
-      amount: 450,
-      phone: '+91 98765 43210',
-      address: language === 'hi' ? 'सेक्टर 15, गुरुग्राम' : 'Sector 15, Gurgaon',
-      estimatedCompletion: '3:30 PM'
-    },
-    {
-      id: '2',
-      electrician: language === 'hi' ? 'सुनील वर्मा' : 'Sunil Verma',
-      service: language === 'hi' ? 'वायरिंग चेक' : 'Wiring Check',
-      status: 'pending',
-      date: '2024-01-16',
-      time: '10:00 AM',
-      amount: 300,
-      phone: '+91 98765 43211',
-      address: language === 'hi' ? 'सेक्टर 22, गुरुग्राम' : 'Sector 22, Gurgaon'
-    }
-  ];
+  // Filter jobs for real-time updates
+  const activeBookings = jobs.filter(job => 
+    job.status === 'pending' || job.status === 'accepted' || job.status === 'in_progress'
+  );
 
-  const bookingHistory = [
-    {
-      id: '3',
-      electrician: language === 'hi' ? 'सुरेश शर्मा' : 'Suresh Sharma',
-      service: language === 'hi' ? 'स्विच रिपेयर' : 'Switch Repair',
-      status: 'completed',
-      date: '2024-01-10',
-      amount: 200,
-      rating: 5,
-      review: language === 'hi' ? 'बहुत अच्छी सेवा' : 'Excellent service'
-    },
-    {
-      id: '4',
-      electrician: language === 'hi' ? 'अमित कुमार' : 'Amit Kumar',
-      service: language === 'hi' ? 'लाइट फिटिंग' : 'Light Fitting',
-      status: 'completed',
-      date: '2024-01-08',
-      amount: 350,
-      rating: 4,
-      review: language === 'hi' ? 'समय पर आए और अच्छा काम किया' : 'Came on time and did good work'
-    }
-  ];
+  const bookingHistory = jobs.filter(job => 
+    job.status === 'completed' || job.status === 'cancelled'
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-500';
       case 'in_progress': return 'bg-blue-500';
+      case 'accepted': return 'bg-purple-500';
       case 'pending': return 'bg-yellow-500';
       case 'cancelled': return 'bg-red-500';
       default: return 'bg-gray-500';
@@ -73,6 +38,7 @@ const BookingSection = () => {
     const translations = {
       completed: language === 'hi' ? 'पूर्ण' : 'Completed',
       in_progress: language === 'hi' ? 'प्रगति में' : 'In Progress',
+      accepted: language === 'hi' ? 'स्वीकार' : 'Accepted',
       pending: language === 'hi' ? 'प्रतीक्षित' : 'Pending',
       cancelled: language === 'hi' ? 'रद्द' : 'Cancelled'
     };
@@ -83,28 +49,45 @@ const BookingSection = () => {
     window.location.href = `tel:${phone}`;
   };
 
-  const handleChat = (electricianId: string) => {
-    console.log('Opening chat with electrician:', electricianId);
-    // Here you would navigate to chat with specific electrician
+  const handleChat = (bookingId: string) => {
+    console.log('Opening chat with electrician for booking:', bookingId);
+    sendMessage(bookingId, language === 'hi' ? 'नमस्ते, मुझे जॉब के बारे में बात करनी है' : 'Hello, I need to discuss about the job');
   };
 
   const handleTrackLocation = (bookingId: string) => {
     console.log('Tracking location for booking:', bookingId);
-    // Here you would open map tracking
+    // Simulate real-time location tracking
+    alert(language === 'hi' ? 'इलेक्ट्रीशियन आपके पास आ रहा है' : 'Electrician is on the way to you');
   };
 
   const handleCancelBooking = (bookingId: string) => {
     console.log('Cancelling booking:', bookingId);
-    // Here you would implement cancellation logic
+    updateJobStatus(bookingId, 'cancelled');
   };
 
-  const handleRateService = (bookingId: string) => {
-    console.log('Rating service for booking:', bookingId);
-    // Here you would open rating modal
+  const handleCompleteJob = (bookingId: string) => {
+    console.log('Completing job:', bookingId);
+    updateJobStatus(bookingId, 'completed');
   };
 
   return (
     <div className="p-4 space-y-6">
+      {/* Real-time Connection Status */}
+      <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+        <div className="flex items-center space-x-2">
+          <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+          <span className="text-sm font-medium">
+            {isConnected 
+              ? (language === 'hi' ? 'रियल-टाइम अपडेट चालू' : 'Real-time Updates Active')
+              : (language === 'hi' ? 'कनेक्शन नहीं' : 'Not Connected')
+            }
+          </span>
+        </div>
+        <Badge variant="outline" className="text-xs">
+          {language === 'hi' ? 'लाइव' : 'LIVE'}
+        </Badge>
+      </div>
+
       <div className="flex space-x-2">
         <Button
           variant={activeTab === 'active' ? 'default' : 'outline'}
@@ -112,6 +95,11 @@ const BookingSection = () => {
           className="flex-1"
         >
           {language === 'hi' ? 'सक्रिय बुकिंग' : 'Active Bookings'}
+          {activeBookings.length > 0 && (
+            <Badge variant="secondary" className="ml-2">
+              {activeBookings.length}
+            </Badge>
+          )}
         </Button>
         <Button
           variant={activeTab === 'history' ? 'default' : 'outline'}
@@ -119,46 +107,69 @@ const BookingSection = () => {
           className="flex-1"
         >
           {language === 'hi' ? 'इतिहास' : 'History'}
+          {bookingHistory.length > 0 && (
+            <Badge variant="outline" className="ml-2">
+              {bookingHistory.length}
+            </Badge>
+          )}
         </Button>
       </div>
 
       {activeTab === 'active' && (
         <div className="space-y-3">
           {activeBookings.map((booking) => (
-            <Card key={booking.id}>
+            <Card key={booking.id} className="border-l-4 border-l-blue-500">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="font-semibold">{booking.electrician}</h3>
-                    <p className="text-sm text-gray-600">{booking.service}</p>
-                    <p className="text-xs text-gray-500">{booking.address}</p>
+                    <h3 className="font-semibold">{booking.description}</h3>
+                    <p className="text-sm text-gray-600">{booking.address}</p>
+                    {booking.isEmergency && (
+                      <Badge variant="destructive" className="mt-1">
+                        {language === 'hi' ? 'आपातकाल' : 'Emergency'}
+                      </Badge>
+                    )}
                   </div>
-                  <Badge className={`${getStatusColor(booking.status)} text-white`}>
-                    {getStatusText(booking.status)}
-                  </Badge>
+                  <div className="flex flex-col items-end space-y-2">
+                    <Badge className={`${getStatusColor(booking.status)} text-white`}>
+                      {getStatusText(booking.status)}
+                    </Badge>
+                    {isConnected && (
+                      <div className="flex items-center text-xs text-green-600">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-1"></div>
+                        {language === 'hi' ? 'लाइव अपडेट' : 'Live Updates'}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
                   <div className="flex items-center text-sm text-gray-600">
                     <Clock className="h-4 w-4 mr-2" />
-                    {booking.date} at {booking.time}
-                    {booking.estimatedCompletion && (
-                      <span className="ml-2 text-blue-600">
-                        (Est: {booking.estimatedCompletion})
+                    {booking.scheduledDate}
+                    {booking.status === 'in_progress' && (
+                      <span className="ml-2 text-blue-600 font-medium">
+                        {language === 'hi' ? '(काम चल रहा है)' : '(Work in Progress)'}
                       </span>
                     )}
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold">₹{booking.amount}</span>
+                    <span className="font-semibold">₹{booking.totalPrice}</span>
                     <div className="flex space-x-2">
                       {booking.status === 'in_progress' && (
-                        <Button size="sm" variant="outline" onClick={() => handleTrackLocation(booking.id)}>
-                          <Navigation className="h-4 w-4 mr-1" />
-                          {language === 'hi' ? 'ट्रैक करें' : 'Track'}
-                        </Button>
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => handleTrackLocation(booking.id)}>
+                            <Navigation className="h-4 w-4 mr-1" />
+                            {language === 'hi' ? 'ट्रैक करें' : 'Track'}
+                          </Button>
+                          <Button size="sm" variant="default" onClick={() => handleCompleteJob(booking.id)}>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            {language === 'hi' ? 'पूरा करें' : 'Complete'}
+                          </Button>
+                        </>
                       )}
-                      <Button size="sm" variant="outline" onClick={() => handleCall(booking.phone)}>
+                      <Button size="sm" variant="outline" onClick={() => handleCall('9876543210')}>
                         <Phone className="h-4 w-4 mr-1" />
                         {language === 'hi' ? 'कॉल' : 'Call'}
                       </Button>
@@ -176,10 +187,23 @@ const BookingSection = () => {
                       </Button>
                     </div>
                   )}
+
+                  {booking.status === 'accepted' && (
+                    <div className="bg-green-50 p-2 rounded text-sm text-green-700">
+                      {language === 'hi' ? '✅ इलेक्ट्रीशियन आपकी जॉब स्वीकार कर चुका है' : '✅ Electrician has accepted your job'}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
+          
+          {activeBookings.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>{language === 'hi' ? 'कोई सक्रिय बुकिंग नहीं' : 'No active bookings'}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -190,8 +214,8 @@ const BookingSection = () => {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="font-semibold">{booking.electrician}</h3>
-                    <p className="text-sm text-gray-600">{booking.service}</p>
+                    <h3 className="font-semibold">{booking.description}</h3>
+                    <p className="text-sm text-gray-600">{booking.address}</p>
                   </div>
                   <Badge className={`${getStatusColor(booking.status)} text-white`}>
                     {getStatusText(booking.status)}
@@ -200,7 +224,7 @@ const BookingSection = () => {
                 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{booking.date}</span>
+                    <span className="text-sm text-gray-600">{booking.scheduledDate}</span>
                     <div className="flex items-center space-x-2">
                       {booking.rating && (
                         <div className="flex items-center">
@@ -208,7 +232,7 @@ const BookingSection = () => {
                           {booking.rating}
                         </div>
                       )}
-                      <span className="font-semibold">₹{booking.amount}</span>
+                      <span className="font-semibold">₹{booking.totalPrice}</span>
                     </div>
                   </div>
                   
@@ -216,15 +240,24 @@ const BookingSection = () => {
                     <p className="text-sm text-gray-600 italic">"{booking.review}"</p>
                   )}
                   
-                  <div className="flex space-x-2">
-                    <Button size="sm" variant="outline" onClick={() => handleRateService(booking.id)} className="flex-1">
-                      {language === 'hi' ? 'फिर से बुक करें' : 'Book Again'}
-                    </Button>
-                  </div>
+                  {booking.status === 'completed' && (
+                    <div className="flex space-x-2">
+                      <Button size="sm" variant="outline" className="flex-1">
+                        {language === 'hi' ? 'फिर से बुक करें' : 'Book Again'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
+          
+          {bookingHistory.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <Star className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>{language === 'hi' ? 'कोई पुराना बुकिंग नहीं' : 'No booking history'}</p>
+            </div>
+          )}
         </div>
       )}
     </div>
