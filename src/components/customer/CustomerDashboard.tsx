@@ -35,6 +35,12 @@ const CustomerDashboard = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatRecipient, setChatRecipient] = useState<{ id: string; name: string } | null>(null);
 
+  // Helper function to get service name by ID
+  const getServiceName = (serviceId: string) => {
+    const service = services.find(s => s.id === serviceId);
+    return service ? service.name : 'Unknown Service';
+  };
+
   // Filter electricians based on search and filter criteria
   const filteredElectricians = electricians.filter(electrician => {
     if (searchQuery && !electrician.name.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -109,9 +115,10 @@ const CustomerDashboard = () => {
   const handleQuickService = (serviceType: string) => {
     console.log('Quick service requested:', serviceType);
     const relevantElectricians = filteredElectricians.filter(e => 
-      e.services && e.services.some(service => 
-        service.name.toLowerCase().includes(serviceType.replace('_', ' '))
-      )
+      e.services && e.services.some(serviceId => {
+        const service = services.find(s => s.id === serviceId);
+        return service && service.name.toLowerCase().includes(serviceType.replace('_', ' '));
+      })
     );
     
     if (relevantElectricians.length > 0) {
@@ -275,9 +282,9 @@ const CustomerDashboard = () => {
                     </div>
                     {electrician.services && electrician.services.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-2">
-                        {electrician.services.slice(0, 2).map((service, index) => (
+                        {electrician.services.slice(0, 2).map((serviceId, index) => (
                           <Badge key={index} variant="outline" className="text-xs">
-                            {service.name}
+                            {getServiceName(serviceId)}
                           </Badge>
                         ))}
                         {electrician.services.length > 2 && (
