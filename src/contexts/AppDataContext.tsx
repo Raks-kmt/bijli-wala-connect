@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ElectricianProfile, Service, Job, User, Notification } from '../types';
 
@@ -49,7 +48,6 @@ interface AppDataContextType {
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
 export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Start with empty arrays - only real data will be added
   const [electricians, setElectricians] = useState<ElectricianProfile[]>([]);
   const [pendingElectricians, setPendingElectricians] = useState<ElectricianProfile[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -70,7 +68,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [jobs, setJobs] = useState<Job[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Real-time stats calculation
+  // Real stats calculation - NO FAKE DATA
   const stats = {
     totalUsers: users.length,
     totalElectricians: electricians.length,
@@ -78,7 +76,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     revenue: jobs.reduce((sum, job) => sum + (job.status === 'completed' ? job.totalPrice : 0), 0),
     pendingApprovals: pendingElectricians.length + pendingServices.length,
     activeJobs: jobs.filter(job => job.status === 'in_progress' || job.status === 'accepted').length,
-    onlineUsers: Math.floor(Math.random() * 10) + users.length, // Simulate some online activity
+    onlineUsers: users.length, // Only count actual users
     todayRevenue: jobs.filter(job => 
       job.status === 'completed' && 
       new Date(job.createdAt).toDateString() === new Date().toDateString()
@@ -89,7 +87,6 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     console.log('AppDataContext - Adding new user:', user);
     setUsers(prev => [...prev, user]);
     
-    // Add welcome notification
     addNotification({
       userId: user.id,
       title: user.language === 'hi' ? 'स्वागत है!' : 'Welcome!',
@@ -103,9 +100,8 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     console.log('AppDataContext - Adding electrician application:', electrician);
     setPendingElectricians(prev => [...prev, electrician]);
     
-    // Notify admin about new application
     addNotification({
-      userId: 'admin1', // Notify admin
+      userId: 'admin1',
       title: 'नया इलेक्ट्रीशियन आवेदन',
       message: `${electrician.name} ने इलेक्ट्रीशियन के लिए आवेदन दिया है`,
       type: 'system',
@@ -121,7 +117,6 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setElectricians(prev => [...prev, approvedElectrician]);
       setPendingElectricians(prev => prev.filter(e => e.id !== electricianId));
       
-      // Add to users list as well
       const electricianUser: User = {
         id: electrician.id,
         name: electrician.name,
@@ -191,7 +186,6 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     console.log('AppDataContext - Creating new job:', newJob);
     setJobs(prev => [...prev, newJob]);
 
-    // Notify electrician
     if (jobData.electricianId) {
       addNotification({
         userId: jobData.electricianId,
@@ -202,7 +196,6 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
     }
 
-    // Notify admin
     addNotification({
       userId: 'admin1',
       title: 'नई जॉब बुकिंग',
@@ -220,7 +213,6 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const job = jobs.find(j => j.id === jobId);
     if (job) {
-      // Notify customer
       addNotification({
         userId: job.customerId,
         title: 'जॉब अपडेट',
@@ -229,7 +221,6 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isRead: false
       });
 
-      // Notify electrician
       if (job.electricianId) {
         addNotification({
           userId: job.electricianId,
@@ -240,7 +231,6 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         });
       }
 
-      // Notify admin
       addNotification({
         userId: 'admin1',
         title: 'जॉब स्टेटस अपडेट',
@@ -263,7 +253,6 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const job = jobs.find(j => j.id === jobId);
     if (job) {
-      // Update electrician earnings and job count
       const electrician = electricians.find(e => e.id === job.electricianId);
       if (electrician) {
         updateElectrician({
@@ -272,7 +261,6 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
           totalJobs: electrician.totalJobs + 1
         });
 
-        // Notify electrician about payment
         addNotification({
           userId: job.electricianId,
           title: 'पेमेंट प्राप्त',

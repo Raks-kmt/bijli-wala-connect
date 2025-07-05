@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppDataProvider } from "./contexts/AppDataContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { RealtimeProvider } from "./contexts/RealtimeContext";
-import LoginScreen from "./components/auth/LoginScreen";
+import AuthPage from "./components/auth/AuthPage";
 import CustomerDashboard from "./components/customer/CustomerDashboard";
 import ElectricianDashboard from "./components/electrician/ElectricianDashboard";
 import AdminDashboard from "./components/admin/AdminDashboard";
@@ -27,7 +27,7 @@ const AppRoutes = () => {
   }
 
   if (!user) {
-    return <LoginScreen />;
+    return <AuthPage />;
   }
 
   // Role-based routing
@@ -44,11 +44,10 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  // Create QueryClient inside the component to ensure React is fully initialized
   const [queryClient] = React.useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        staleTime: 1000 * 60 * 5,
         refetchOnWindowFocus: false,
       },
     },

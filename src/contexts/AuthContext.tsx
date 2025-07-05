@@ -12,7 +12,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users database
+// Mock users database - includes all registered users
 const MOCK_USERS: User[] = [
   {
     id: 'admin1',
@@ -69,7 +69,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const foundUser = MOCK_USERS.find(u => u.email === email);
+    // Check in both MOCK_USERS and dynamically added users from localStorage
+    const allUsers = [...MOCK_USERS];
+    const dynamicUsers = JSON.parse(localStorage.getItem('dynamicUsers') || '[]');
+    allUsers.push(...dynamicUsers);
+    
+    const foundUser = allUsers.find(u => u.email === email);
     if (foundUser) {
       setUser(foundUser);
       localStorage.setItem('currentUser', JSON.stringify(foundUser));
@@ -95,8 +100,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('AuthContext - User updated:', updatedUser);
     }
   };
-
-  console.log('AuthContext - Current user:', user);
 
   return (
     <AuthContext.Provider value={{
