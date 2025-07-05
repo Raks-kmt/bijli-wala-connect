@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ElectricianProfile, Service, Job, User, Notification } from '../types';
 
@@ -8,6 +9,7 @@ interface AppDataContextType {
   approveElectrician: (electricianId: string) => void;
   rejectElectrician: (electricianId: string) => void;
   updateElectrician: (electrician: Partial<ElectricianProfile>) => void;
+  addElectricianApplication: (electrician: ElectricianProfile) => void;
 
   // Services data
   services: Service[];
@@ -22,6 +24,10 @@ interface AppDataContextType {
   updateJobStatus: (jobId: string, status: Job['status']) => void;
   completeJob: (jobId: string, completedImages?: string[], rating?: number, review?: string) => void;
 
+  // Users data
+  users: User[];
+  addUser: (user: User) => void;
+
   // Notifications
   notifications: Notification[];
   addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void;
@@ -35,67 +41,18 @@ interface AppDataContextType {
     revenue: number;
     pendingApprovals: number;
     activeJobs: number;
+    onlineUsers: number;
+    todayRevenue: number;
   };
 }
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
 export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Real electricians data with proper IDs
-  const [electricians, setElectricians] = useState<ElectricianProfile[]>([
-    {
-      id: 'electrician1',
-      name: 'राम कुमार',
-      email: 'electrician@example.com',
-      phone: '9876543212',
-      role: 'electrician',
-      isVerified: true,
-      language: 'hi',
-      age: 35,
-      experience: 5,
-      education: 'ITI Electrical',
-      services: ['1'], // Array of service IDs
-      portfolio: [],
-      rating: 4.8,
-      totalJobs: 120,
-      isApproved: true,
-      location: {
-        lat: 28.6139,
-        lng: 77.2090,
-        address: 'नोएडा, उत्तर प्रदेश'
-      },
-      availability: true,
-      earnings: 45000
-    }
-  ]);
-
-  const [pendingElectricians, setPendingElectricians] = useState<ElectricianProfile[]>([
-    {
-      id: 'electrician2',
-      name: 'विकास कुमार',
-      email: 'vikas@example.com',
-      phone: '9876543211',
-      role: 'electrician',
-      isVerified: false,
-      language: 'hi',
-      age: 28,
-      experience: 3,
-      education: 'Diploma Electrical',
-      services: [], // Empty array of service IDs
-      portfolio: [],
-      rating: 0,
-      totalJobs: 0,
-      isApproved: false,
-      location: {
-        lat: 28.6139,
-        lng: 77.2090,
-        address: 'नोएडा, उत्तर प्रदेश'
-      },
-      availability: true,
-      earnings: 0
-    }
-  ]);
-
+  // Start with empty arrays - only real data will be added
+  const [electricians, setElectricians] = useState<ElectricianProfile[]>([]);
+  const [pendingElectricians, setPendingElectricians] = useState<ElectricianProfile[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [services, setServices] = useState<Service[]>([
     {
       id: '1',
@@ -109,85 +66,77 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   ]);
 
-  const [pendingServices, setPendingServices] = useState<Service[]>([
-    {
-      id: '2',
-      name: 'वायरिंग रिपेयर',
-      basePrice: 500,
-      description: 'घरेलू वायरिंग की मरम्मत',
-      category: 'रिपेयर',
-      wholeHousePricing: {
-        enabled: true,
-        perSquareFoot: 50,
-        flatRate: 5000
-      }
-    }
-  ]);
-
-  // Real jobs data with proper user IDs
-  const [jobs, setJobs] = useState<Job[]>([
-    {
-      id: 'job1',
-      customerId: 'customer1',
-      electricianId: 'electrician1',
-      serviceId: '1',
-      status: 'pending',
-      description: 'फैन नहीं चल रहा',
-      address: 'नोएडा सेक्टर 62',
-      location: { lat: 28.6139, lng: 77.2090 },
-      distance: 2.5,
-      totalPrice: 450,
-      scheduledDate: new Date().toLocaleDateString(),
-      isEmergency: false,
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'job2',
-      customerId: 'customer1',
-      electricianId: 'electrician1',
-      serviceId: '1',
-      status: 'completed',
-      description: 'AC की वायरिंग',
-      address: 'नोएडा सेक्टर 63',
-      location: { lat: 28.6139, lng: 77.2090 },
-      distance: 3.0,
-      totalPrice: 800,
-      scheduledDate: '2024-01-15',
-      isEmergency: false,
-      createdAt: '2024-01-15T10:00:00Z',
-      rating: 5,
-      review: 'बहुत अच्छी सेवा'
-    }
-  ]);
-
+  const [pendingServices, setPendingServices] = useState<Service[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Calculate real-time stats
+  // Real-time stats calculation
   const stats = {
-    totalUsers: electricians.length + 1247, // Including customers
+    totalUsers: users.length,
     totalElectricians: electricians.length,
     totalJobs: jobs.length,
     revenue: jobs.reduce((sum, job) => sum + (job.status === 'completed' ? job.totalPrice : 0), 0),
     pendingApprovals: pendingElectricians.length + pendingServices.length,
     activeJobs: jobs.filter(job => job.status === 'in_progress' || job.status === 'accepted').length,
-    onlineUsers: Math.floor(Math.random() * 50) + 20, // Simulate online users
+    onlineUsers: Math.floor(Math.random() * 10) + users.length, // Simulate some online activity
     todayRevenue: jobs.filter(job => 
       job.status === 'completed' && 
       new Date(job.createdAt).toDateString() === new Date().toDateString()
     ).reduce((sum, job) => sum + job.totalPrice, 0)
   };
 
+  const addUser = (user: User) => {
+    console.log('AppDataContext - Adding new user:', user);
+    setUsers(prev => [...prev, user]);
+    
+    // Add welcome notification
+    addNotification({
+      userId: user.id,
+      title: user.language === 'hi' ? 'स्वागत है!' : 'Welcome!',
+      message: user.language === 'hi' ? 'आपका खाता सफलतापूर्वक बन गया है' : 'Your account has been created successfully',
+      type: 'system',
+      isRead: false
+    });
+  };
+
+  const addElectricianApplication = (electrician: ElectricianProfile) => {
+    console.log('AppDataContext - Adding electrician application:', electrician);
+    setPendingElectricians(prev => [...prev, electrician]);
+    
+    // Notify admin about new application
+    addNotification({
+      userId: 'admin1', // Notify admin
+      title: 'नया इलेक्ट्रीशियन आवेदन',
+      message: `${electrician.name} ने इलेक्ट्रीशियन के लिए आवेदन दिया है`,
+      type: 'system',
+      isRead: false
+    });
+  };
+
   const approveElectrician = (electricianId: string) => {
+    console.log('AppDataContext - Approving electrician:', electricianId);
     const electrician = pendingElectricians.find(e => e.id === electricianId);
     if (electrician) {
       const approvedElectrician = { ...electrician, isApproved: true, isVerified: true };
       setElectricians(prev => [...prev, approvedElectrician]);
       setPendingElectricians(prev => prev.filter(e => e.id !== electricianId));
       
+      // Add to users list as well
+      const electricianUser: User = {
+        id: electrician.id,
+        name: electrician.name,
+        email: electrician.email,
+        phone: electrician.phone,
+        role: 'electrician',
+        isVerified: true,
+        language: electrician.language
+      };
+      setUsers(prev => [...prev.filter(u => u.id !== electrician.id), electricianUser]);
+      
       addNotification({
         userId: electricianId,
         title: 'आवेदन स्वीकृत',
-        message: 'आपका इलेक्ट्रीशियन आवेदन स्वीकार कर लिया गया है',
+        message: 'बधाई! आपका इलेक्ट्रीशियन आवेदन स्वीकार कर लिया गया है',
         type: 'system',
         isRead: false
       });
@@ -195,24 +144,27 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const rejectElectrician = (electricianId: string) => {
+    console.log('AppDataContext - Rejecting electrician:', electricianId);
     setPendingElectricians(prev => prev.filter(e => e.id !== electricianId));
     
     addNotification({
       userId: electricianId,
       title: 'आवेदन अस्वीकृत',
-      message: 'आपका इलेक्ट्रीशियन आवेदन अस्वीकार कर दिया गया है',
+      message: 'खुशी: आपका इलेक्ट्रीशियन आवेदन अस्वीकार कर दिया गया है। कृपया फिर से कोशिश करें',
       type: 'system',
       isRead: false
     });
   };
 
   const updateElectrician = (updatedElectrician: Partial<ElectricianProfile>) => {
+    console.log('AppDataContext - Updating electrician:', updatedElectrician);
     setElectricians(prev => 
       prev.map(e => e.id === updatedElectrician.id ? { ...e, ...updatedElectrician } : e)
     );
   };
 
   const approveService = (serviceId: string) => {
+    console.log('AppDataContext - Approving service:', serviceId);
     const service = pendingServices.find(s => s.id === serviceId);
     if (service) {
       setServices(prev => [...prev, service]);
@@ -221,27 +173,41 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const rejectService = (serviceId: string) => {
+    console.log('AppDataContext - Rejecting service:', serviceId);
     setPendingServices(prev => prev.filter(s => s.id !== serviceId));
   };
 
   const addService = (service: Service) => {
+    console.log('AppDataContext - Adding new service:', service);
     setPendingServices(prev => [...prev, service]);
   };
 
   const createJob = (jobData: Omit<Job, 'id' | 'createdAt'>) => {
     const newJob: Job = {
       ...jobData,
-      id: Math.random().toString(),
+      id: `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date().toISOString()
     };
+    console.log('AppDataContext - Creating new job:', newJob);
     setJobs(prev => [...prev, newJob]);
 
     // Notify electrician
+    if (jobData.electricianId) {
+      addNotification({
+        userId: jobData.electricianId,
+        title: 'नई जॉब',
+        message: `आपके लिए एक नई जॉब आई है: ${jobData.description}`,
+        type: 'job',
+        isRead: false
+      });
+    }
+
+    // Notify admin
     addNotification({
-      userId: jobData.electricianId,
-      title: 'नई जॉब',
-      message: 'आपके लिए एक नई जॉब आई है',
-      type: 'job',
+      userId: 'admin1',
+      title: 'नई जॉब बुकिंग',
+      message: `नई जॉब बुक हुई है: ${jobData.description}`,
+      type: 'booking',
       isRead: false
     });
   };
@@ -254,15 +220,16 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const job = jobs.find(j => j.id === jobId);
     if (job) {
-      // Notify all relevant users
+      // Notify customer
       addNotification({
         userId: job.customerId,
         title: 'जॉब अपडेट',
-        message: `आपकी जॉब का स्टेटस अपडेट हुआ: ${status}`,
+        message: `आपकी जॉब का स्टेटस अपडेट हुआ: ${status === 'completed' ? 'पूर्ण' : status === 'in_progress' ? 'चालू' : status === 'accepted' ? 'स्वीकार' : status}`,
         type: 'job',
         isRead: false
       });
 
+      // Notify electrician
       if (job.electricianId) {
         addNotification({
           userId: job.electricianId,
@@ -272,10 +239,20 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
           isRead: false
         });
       }
+
+      // Notify admin
+      addNotification({
+        userId: 'admin1',
+        title: 'जॉब स्टेटस अपडेट',
+        message: `जॉब ID ${jobId} का स्टेटस ${status} हो गया`,
+        type: 'system',
+        isRead: false
+      });
     }
   };
 
   const completeJob = (jobId: string, completedImages?: string[], rating?: number, review?: string) => {
+    console.log('AppDataContext - Completing job:', jobId);
     setJobs(prev => 
       prev.map(job => 
         job.id === jobId 
@@ -287,18 +264,30 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const job = jobs.find(j => j.id === jobId);
     if (job) {
       // Update electrician earnings and job count
-      updateElectrician({
-        id: job.electricianId,
-        earnings: electricians.find(e => e.id === job.electricianId)?.earnings + job.totalPrice,
-        totalJobs: (electricians.find(e => e.id === job.electricianId)?.totalJobs || 0) + 1
-      });
+      const electrician = electricians.find(e => e.id === job.electricianId);
+      if (electrician) {
+        updateElectrician({
+          id: job.electricianId,
+          earnings: electrician.earnings + job.totalPrice,
+          totalJobs: electrician.totalJobs + 1
+        });
+
+        // Notify electrician about payment
+        addNotification({
+          userId: job.electricianId,
+          title: 'पेमेंट प्राप्त',
+          message: `आपको ₹${job.totalPrice} का पेमेंट मिला`,
+          type: 'payment',
+          isRead: false
+        });
+      }
     }
   };
 
   const addNotification = (notification: Omit<Notification, 'id' | 'timestamp'>) => {
     const newNotification: Notification = {
       ...notification,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date().toISOString()
     };
     console.log('AppDataContext - Adding notification:', newNotification);
@@ -320,6 +309,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       approveElectrician,
       rejectElectrician,
       updateElectrician,
+      addElectricianApplication,
       services,
       pendingServices,
       approveService,
@@ -329,6 +319,8 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       createJob,
       updateJobStatus,
       completeJob,
+      users,
+      addUser,
       notifications,
       addNotification,
       markNotificationRead,
