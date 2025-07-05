@@ -86,7 +86,7 @@ export interface Notification {
   userId: string;
   title: string;
   message: string;
-  type: 'job' | 'payment' | 'system' | 'promotion';
+  type: 'job' | 'payment' | 'system' | 'promotion' | 'bonus' | 'booking' | 'broadcast' | 'chat';
   isRead: boolean;
   timestamp: string;
 }
