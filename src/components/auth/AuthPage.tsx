@@ -72,16 +72,24 @@ const AuthPage = () => {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
+          role: 'electrician',
+          isVerified: false,
+          language: formData.language,
+          age: 25, // Default age
           experience: parseInt(formData.experience) || 0,
-          specialization: formData.specialization,
-          location: formData.location,
+          education: formData.specialization || 'Basic Electrical Training',
+          services: [], // Empty initially
+          portfolio: [],
           rating: 0,
           totalJobs: 0,
           earnings: 0,
           isApproved: false,
-          isVerified: false,
-          language: formData.language,
-          availability: 'available'
+          location: {
+            lat: 0,
+            lng: 0,
+            address: formData.location || 'Location not specified'
+          },
+          availability: true
         };
 
         addElectricianApplication(electricianProfile);
