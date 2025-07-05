@@ -68,6 +68,15 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [jobs, setJobs] = useState<Job[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  // Real-time sync function to broadcast changes
+  const broadcastUpdate = React.useCallback((type: string, data: any) => {
+    console.log(`🔄 Broadcasting ${type} update:`, data);
+    // Simulate real-time update broadcast
+    window.dispatchEvent(new CustomEvent('appDataUpdate', { 
+      detail: { type, data, timestamp: Date.now() } 
+    }));
+  }, []);
+
   // Real stats calculation - NO FAKE DATA
   const stats = {
     totalUsers: users.length,
@@ -86,6 +95,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addUser = (user: User) => {
     console.log('AppDataContext - Adding new user:', user);
     setUsers(prev => [...prev, user]);
+    broadcastUpdate('USER_ADDED', user);
     
     addNotification({
       userId: user.id,
@@ -99,6 +109,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addElectricianApplication = (electrician: ElectricianProfile) => {
     console.log('AppDataContext - Adding electrician application:', electrician);
     setPendingElectricians(prev => [...prev, electrician]);
+    broadcastUpdate('ELECTRICIAN_APPLICATION_ADDED', electrician);
     
     addNotification({
       userId: 'admin1',
@@ -116,6 +127,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const approvedElectrician = { ...electrician, isApproved: true, isVerified: true };
       setElectricians(prev => [...prev, approvedElectrician]);
       setPendingElectricians(prev => prev.filter(e => e.id !== electricianId));
+      broadcastUpdate('ELECTRICIAN_APPROVED', approvedElectrician);
       
       const electricianUser: User = {
         id: electrician.id,
@@ -141,6 +153,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const rejectElectrician = (electricianId: string) => {
     console.log('AppDataContext - Rejecting electrician:', electricianId);
     setPendingElectricians(prev => prev.filter(e => e.id !== electricianId));
+    broadcastUpdate('ELECTRICIAN_REJECTED', { electricianId });
     
     addNotification({
       userId: electricianId,
@@ -156,25 +169,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setElectricians(prev => 
       prev.map(e => e.id === updatedElectrician.id ? { ...e, ...updatedElectrician } : e)
     );
-  };
-
-  const approveService = (serviceId: string) => {
-    console.log('AppDataContext - Approving service:', serviceId);
-    const service = pendingServices.find(s => s.id === serviceId);
-    if (service) {
-      setServices(prev => [...prev, service]);
-      setPendingServices(prev => prev.filter(s => s.id !== serviceId));
-    }
-  };
-
-  const rejectService = (serviceId: string) => {
-    console.log('AppDataContext - Rejecting service:', serviceId);
-    setPendingServices(prev => prev.filter(s => s.id !== serviceId));
-  };
-
-  const addService = (service: Service) => {
-    console.log('AppDataContext - Adding new service:', service);
-    setPendingServices(prev => [...prev, service]);
+    broadcastUpdate('ELECTRICIAN_UPDATED', updatedElectrician);
   };
 
   const createJob = (jobData: Omit<Job, 'id' | 'createdAt'>) => {
@@ -185,6 +180,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     console.log('AppDataContext - Creating new job:', newJob);
     setJobs(prev => [...prev, newJob]);
+    broadcastUpdate('JOB_CREATED', newJob);
 
     if (jobData.electricianId) {
       addNotification({
@@ -210,6 +206,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setJobs(prev => 
       prev.map(job => job.id === jobId ? { ...job, status } : job)
     );
+    broadcastUpdate('JOB_STATUS_UPDATED', { jobId, status });
 
     const job = jobs.find(j => j.id === jobId);
     if (job) {
@@ -241,6 +238,39 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const addNotification = (notification: Omit<Notification, 'id' | 'timestamp'>) => {
+    const newNotification: Notification = {
+      ...notification,
+      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date().toISOString()
+    };
+    console.log('AppDataContext - Adding notification:', newNotification);
+    setNotifications(prev => [newNotification, ...prev]);
+    broadcastUpdate('NOTIFICATION_ADDED', newNotification);
+  };
+
+  const approveService = (serviceId: string) => {
+    console.log('AppDataContext - Approving service:', serviceId);
+    const service = pendingServices.find(s => s.id === serviceId);
+    if (service) {
+      setServices(prev => [...prev, service]);
+      setPendingServices(prev => prev.filter(s => s.id !== serviceId));
+      broadcastUpdate('SERVICE_APPROVED', service);
+    }
+  };
+
+  const rejectService = (serviceId: string) => {
+    console.log('AppDataContext - Rejecting service:', serviceId);
+    setPendingServices(prev => prev.filter(s => s.id !== serviceId));
+    broadcastUpdate('SERVICE_REJECTED', { serviceId });
+  };
+
+  const addService = (service: Service) => {
+    console.log('AppDataContext - Adding new service:', service);
+    setPendingServices(prev => [...prev, service]);
+    broadcastUpdate('SERVICE_ADDED', service);
+  };
+
   const completeJob = (jobId: string, completedImages?: string[], rating?: number, review?: string) => {
     console.log('AppDataContext - Completing job:', jobId);
     setJobs(prev => 
@@ -250,6 +280,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
           : job
       )
     );
+    broadcastUpdate('JOB_COMPLETED', { jobId, completedImages, rating, review });
 
     const job = jobs.find(j => j.id === jobId);
     if (job) {
@@ -272,23 +303,31 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const addNotification = (notification: Omit<Notification, 'id' | 'timestamp'>) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: new Date().toISOString()
-    };
-    console.log('AppDataContext - Adding notification:', newNotification);
-    setNotifications(prev => [newNotification, ...prev]);
-  };
-
   const markNotificationRead = (notificationId: string) => {
     setNotifications(prev => 
       prev.map(notif => 
         notif.id === notificationId ? { ...notif, isRead: true } : notif
       )
     );
+    broadcastUpdate('NOTIFICATION_READ', { notificationId });
   };
+
+  // Real-time event listener for cross-component synchronization
+  useEffect(() => {
+    const handleAppDataUpdate = (event: CustomEvent) => {
+      const { type, data, timestamp } = event.detail;
+      console.log(`🔄 Received ${type} update:`, data, 'at', new Date(timestamp));
+      
+      // Force re-render for real-time updates
+      window.dispatchEvent(new CustomEvent('forceUpdate', { detail: { type, data } }));
+    };
+
+    window.addEventListener('appDataUpdate', handleAppDataUpdate);
+    
+    return () => {
+      window.removeEventListener('appDataUpdate', handleAppDataUpdate);
+    };
+  }, []);
 
   return (
     <AppDataContext.Provider value={{

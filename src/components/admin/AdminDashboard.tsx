@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useRealtime } from '../../contexts/RealtimeContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Users, Zap, DollarSign, CheckCircle, XCircle, Settings, Bell, Clock, Activity, UserCheck, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +17,7 @@ const AdminDashboard = () => {
   const { language } = useLanguage();
   const { toast } = useToast();
   const { isConnected, sendNotification, onlineUsers } = useRealtime();
+  const { lastUpdate, updateCount } = useRealtimeSync(); // Real-time sync hook
   const [selectedTab, setSelectedTab] = useState('overview');
   const [realtimeStats, setRealtimeStats] = useState({
     onlineUsers: 0,
@@ -73,6 +75,31 @@ const AdminDashboard = () => {
 
   const unreadNotifications = notifications.filter(n => !n.isRead);
   const systemNotifications = notifications.filter(n => n.type === 'system').slice(0, 10);
+
+  // Real-time sync effect to force updates when data changes
+  useEffect(() => {
+    console.log(`🔄 Admin dashboard synced at ${new Date(lastUpdate).toLocaleTimeString()} - Update #${updateCount}`);
+    
+    // Show real-time sync notification
+    if (updateCount > 1 && isConnected) {
+      const notifications = ['Data synchronized', 'Real-time update received', 'Dashboard refreshed'];
+      const randomNotification = notifications[Math.floor(Math.random() * notifications.length)];
+      
+      if (language === 'hi') {
+        toast({
+          title: '🔄 डेटा सिंक हुआ',
+          description: 'सभी जानकारी अपडेट हो गई है',
+          duration: 2000
+        });
+      } else {
+        toast({
+          title: '🔄 Data Synced',
+          description: randomNotification,
+          duration: 2000
+        });
+      }
+    }
+  }, [lastUpdate, updateCount, isConnected, language, toast]);
 
   const handleApproveService = (serviceId: string) => {
     approveService(serviceId);
